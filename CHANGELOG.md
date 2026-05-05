@@ -53,6 +53,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cache hit tracking and latency monitoring
 - Recent calls history with status indicators
 - Integrated metrics collection into chat and analyze commands
+- Comprehensive error handling system with custom exceptions
+- exceptions.py module with 15+ specific exception classes
+- Custom exceptions for API, auth, rate limit, quota, file operations, git, parsing, sanitization, keyring, metrics, validation, network, timeout, and context errors
+- Each exception includes helpful suggestions for recovery
+- Improved error handling in LLM client with specific exception mapping
+- Validation for API keys, messages, and provider inputs
+- Graceful handling of API errors with appropriate retry logic
+- Error handler function for nice CLI error display
+- Try-except blocks in chat and analyze commands
+- User-friendly error messages with recovery suggestions
+- Keyboard interrupt handling
+- Detailed error information with status codes and response bodies
 
 ### Changed
 - Updated README with current working features
@@ -63,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated API key retrieval to use keyring fallback in settings
 - Enhanced analyze command with automatic content sanitization
 - Integrated automatic metrics collection into chat and analyze commands
+- Improved error handling across LLM client and CLI commands
 
 ## [0.1.0] - 2025-05-05
 
