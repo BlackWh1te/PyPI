@@ -8,6 +8,7 @@ from ..core.llm_client import BaseLLMClient
 from ..parsers.code_parser import CodeParser
 from ..utils.git_utils import GitHelper
 from ..utils.context_builder import SmartContextBuilder
+import time
 
 
 class BaseAdapter(BasePlugin):
@@ -81,6 +82,173 @@ class BaseAdapter(BasePlugin):
 
         if self.config.enable_git_integration:
             self._register_git_tools()
+    
+    def register_advanced_tools(self, advanced_config: Optional[Dict] = None):
+        """Register advanced AI tools.
+        
+        Args:
+            advanced_config: Configuration for advanced tools
+        """
+        try:
+            from ..advanced import (
+                AdvancedCodeRefactoring,
+                AdvancedBugDetection,
+                AdvancedCodeSmellDetection,
+                AdvancedComplexityAnalysis,
+                AdvancedSecurityScan,
+                AdvancedCommitGenerator,
+                AdvancedPRAssistant,
+                AdvancedConflictResolver,
+                AdvancedBlameAnalyzer,
+                AdvancedSecretScanner,
+                AdvancedVulnChecker,
+                AdvancedLicenseCheck,
+            )
+        except ImportError:
+            # Advanced tools may not be available
+            return
+        
+        # Register code analysis advanced tools
+        if advanced_config and advanced_config.get("code_analysis", {}).get("enabled", False):
+            self._register_advanced_code_tools()
+        
+        # Register Git advanced tools
+        if advanced_config and advanced_config.get("git_operations", {}).get("enabled", False):
+            self._register_advanced_git_tools()
+        
+        # Register security advanced tools
+        if advanced_config and advanced_config.get("security", {}).get("enabled", False):
+            self._register_advanced_security_tools()
+    
+    def _register_advanced_code_tools(self):
+        """Register advanced code analysis tools."""
+        from ..advanced.code import (
+            AdvancedCodeRefactoring,
+            AdvancedBugDetection,
+            AdvancedCodeSmellDetection,
+            AdvancedComplexityAnalysis,
+            AdvancedSecurityScan,
+        )
+        
+        # Register refactor_code tool
+        self.tool_registry.register(ToolDefinition(
+            name="refactor_code",
+            description="AI-powered code refactoring with suggestions",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "file_path": {"type": "string"},
+                    "aggressive": {"type": "boolean", "default": False}
+                },
+                "required": []
+            },
+            handler=lambda **kw: self._execute_advanced_tool("refactor_code", **kw),
+            category=ToolCategory.CODE_ANALYSIS
+        ))
+        
+        # Register detect_bugs tool
+        self.tool_registry.register(ToolDefinition(
+            name="detect_bugs",
+            description="AI-powered bug detection with fix suggestions",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "file_path": {"type": "string"},
+                    "severity": {"type": "string", "default": "all"}
+                },
+                "required": []
+            },
+            handler=lambda **kw: self._execute_advanced_tool("detect_bugs", **kw),
+            category=ToolCategory.CODE_ANALYSIS
+        ))
+    
+    def _register_advanced_git_tools(self):
+        """Register advanced Git tools."""
+        from ..advanced.git import (
+            AdvancedCommitGenerator,
+            AdvancedPRAssistant,
+            AdvancedConflictResolver,
+            AdvancedBlameAnalyzer,
+        )
+        
+        # Register generate_commit tool
+        self.tool_registry.register(ToolDefinition(
+            name="generate_commit",
+            description="Generate conventional commit messages",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "repo_path": {"type": "string", "default": "."},
+                    "style": {"type": "string", "default": "conventional"}
+                },
+                "required": []
+            },
+            handler=lambda **kw: self._execute_advanced_tool("generate_commit", **kw),
+            category=ToolCategory.GIT
+        ))
+    
+    def _register_advanced_security_tools(self):
+        """Register advanced security tools."""
+        from ..advanced.security import (
+            AdvancedSecretScanner,
+            AdvancedVulnChecker,
+            AdvancedLicenseCheck,
+        )
+        
+        # Register scan_secrets tool
+        self.tool_registry.register(ToolDefinition(
+            name="scan_secrets",
+            description="Scan for secrets and credentials",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "file_path": {"type": "string"},
+                    "directory": {"type": "string"}
+                },
+                "required": []
+            },
+            handler=lambda **kw: self._execute_advanced_tool("scan_secrets", **kw),
+            category=ToolCategory.GENERAL
+        ))
+    
+    def _execute_advanced_tool(self, tool_name: str, **kwargs):
+        """Execute an advanced tool.
+        
+        Args:
+            tool_name: Name of the advanced tool
+            **kwargs: Tool arguments
+            
+        Returns:
+            Tool execution result
+        """
+        from ..advanced import (
+            AdvancedCodeRefactoring,
+            AdvancedBugDetection,
+            AdvancedCommitGenerator,
+            AdvancedSecretScanner,
+        )
+        
+        # Map tool names to classes
+        tool_classes = {
+            "refactor_code": AdvancedCodeRefactoring,
+            "detect_bugs": AdvancedBugDetection,
+            "generate_commit": AdvancedCommitGenerator,
+            "scan_secrets": AdvancedSecretScanner,
+        }
+        
+        tool_class = tool_classes.get(tool_name)
+        if not tool_class:
+            raise ValueError(f"Unknown advanced tool: {tool_name}")
+        
+        # Create tool instance
+        tool = tool_class(self.llm_client)
+        
+        # Execute (run in asyncio if needed)
+        import asyncio
+        if asyncio.iscoroutinefunction(tool.execute):
+            return asyncio.run(tool.execute(**kwargs))
+        else:
+            return tool.execute(**kwargs)
 
     def _register_code_analysis_tools(self):
         """Register code analysis tools."""
