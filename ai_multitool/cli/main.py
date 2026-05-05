@@ -14,6 +14,7 @@ from ai_multitool.parsers.code_parser import get_parser
 from ai_multitool.utils.git_utils import get_git_helper
 from ai_multitool.utils.context_builder import get_context_builder
 from ai_multitool.utils.key_manager import get_key_manager
+from ai_multitool.utils.sanitizer import get_sanitizer
 
 app = typer.Typer(
     name="ai-multitool",
@@ -105,6 +106,7 @@ def analyze(
     structure: bool = typer.Option(False, help="Show code structure without AI analysis"),
     git: bool = typer.Option(True, help="Include git repository context"),
     context: bool = typer.Option(True, help="Use smart context builder for enhanced analysis"),
+    sanitize: bool = typer.Option(True, help="Sanitize content for security (redact sensitive data)"),
 ):
     """Analyze code with AI"""
     from pathlib import Path
@@ -122,6 +124,7 @@ def analyze(
     parser = get_parser()
     git_helper = get_git_helper()
     context_builder = get_context_builder()
+    sanitizer = get_sanitizer()
 
     async def run_analyze():
         console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
@@ -240,12 +243,36 @@ def analyze(
         # Read content for AI analysis
         if path_obj.is_file():
             content = read_file(path)
+            
+            # Sanitize content if enabled
+            if sanitize:
+                result = sanitizer.sanitize(content, path)
+                if result.issues_found:
+                    console.print(f"[yellow]Security issues found: {', '.join(result.issues_found)}[/yellow]")
+                if result.warnings:
+                    console.print(f"[dim]Warnings: {', '.join(result.warnings)}[/dim]")
+                content = result.sanitized_content
         else:
             structures = parser.parse_directory(path, max_files=10)
             content = ""
             for file_path in [s.file_path for s in structures[:10]]:
                 try:
                     file_content = read_file(file_path)
+                    
+                    # Check file safety
+                    is_safe, warnings = sanitizer.check_file_safety(file_path)
+                    if not is_safe:
+                        console.print(f"[yellow]Skipping potentially unsafe file: {file_path}[/yellow]")
+                        console.print(f"[dim]Reason: {warnings[0]}[/dim]")
+                        continue
+                    
+                    # Sanitize content if enabled
+                    if sanitize:
+                        result = sanitizer.sanitize(file_content, file_path)
+                        if result.issues_found:
+                            console.print(f"[yellow]Security issues in {Path(file_path).name}: {', '.join(result.issues_found)}[/yellow]")
+                        file_content = result.sanitized_content
+                    
                     content += f"\n\n# File: {file_path}\n{file_content}"
                 except Exception as e:
                     console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")

@@ -35,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - keys CLI command with subcommands: set, get, delete, list, migrate
 - Settings now check keyring as fallback for API keys
 - Improved security by supporting OS-level keyring storage
+- Content sanitization for security and privacy
+- sanitizer.py module for detecting and redacting sensitive data
+- Detection of prompt injection attempts
+- Automatic redaction of emails, phone numbers, API keys, credit cards, SSNs
+- Detection of hardcoded secrets in code (passwords, API keys, tokens)
+- File safety checking to skip potentially unsafe files (.env, .pem, .key, etc.)
+- --sanitize flag to enable/disable content sanitization (default: True)
+- Binary content detection to prevent sending non-text data to AI
 
 ### Changed
 - Updated README with current working features
@@ -43,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced analyze command to include git repository context in AI prompts
 - Enhanced analyze command to use smart context builder for richer AI context
 - Updated API key retrieval to use keyring fallback in settings
+- Enhanced analyze command with automatic content sanitization
 
 ## [0.1.0] - 2025-05-05
 
