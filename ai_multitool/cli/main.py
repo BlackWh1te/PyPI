@@ -9,6 +9,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from ai_multitool.core.llm_client import ClientFactory
 from ai_multitool.core.models import Message, MessageRole, ChatHistory
 from ai_multitool.config.settings import get_settings
+from ai_multitool.utils.file_utils import read_file, read_directory, is_code_file
 
 app = typer.Typer(
     name="ai-multitool",
@@ -99,10 +100,88 @@ def analyze(
     provider: str = typer.Option(None, help="AI provider (anthropic or openai)"),
 ):
     """Analyze code with AI"""
-    console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
-    console.print(f"[dim]Using model: {model or 'default'}[/dim]")
-    console.print("\n[yellow]Analysis will appear here...[/yellow]")
-    # TODO: Implement analyze command
+    from pathlib import Path
+
+    settings = get_settings()
+    provider = provider or "anthropic"
+    model = model or settings.default_model
+    api_key = settings.anthropic_api_key if provider == "anthropic" else settings.openai_api_key
+
+    if not api_key:
+        console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env[/red]")
+        raise typer.Exit(1)
+
+    async def run_analyze():
+        console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
+        console.print(f"[dim]Provider: {provider} | Model: {model}[/dim]\n")
+
+        # Check if path is file or directory
+        path_obj = Path(path)
+        if not path_obj.exists():
+            console.print(f"[red]Error: Path not found: {path}[/red]")
+            raise typer.Exit(1)
+
+        # Read content
+        if path_obj.is_file():
+            content = read_file(path)
+            file_info = f"File: {path_obj.name} ({len(content)} chars)"
+        elif path_obj.is_dir():
+            # For directories, read all code files
+            files = read_directory(path)
+            if not files:
+                console.print("[yellow]No files found in directory[/yellow]")
+                return
+
+            content = ""
+            for file_path in files[:10]:  # Limit to 10 files
+                if is_code_file(file_path):
+                    try:
+                        file_content = read_file(file_path)
+                        content += f"\n\n# File: {file_path}\n{file_content}"
+                    except Exception as e:
+                        console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
+
+            file_info = f"Directory: {len(files)} files analyzed"
+        else:
+            console.print(f"[red]Error: Not a file or directory: {path}[/red]")
+            raise typer.Exit(1)
+
+        # Create client
+        client = ClientFactory.create_client(provider, api_key, model)
+
+        # Build prompt
+        prompt = f"""Analyze the following code:
+
+{file_info}
+
+```python
+{content[:10000]}
+```
+
+Please provide:
+1. A summary of what this code does
+2. Any potential issues or improvements
+3. Best practices that could be applied
+"""
+
+        # Make API call
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Analyzing...", total=None)
+
+            response = await client.chat([Message(role=MessageRole.USER, content=prompt)])
+
+        # Display analysis
+        console.print(Panel(response.content, title="AI Analysis"))
+        console.print(
+            f"[dim]Tokens: {response.tokens_used} | "
+            f"Latency: {response.latency_ms:.0f}ms[/dim]"
+        )
+
+    asyncio.run(run_analyze())
 
 
 @app.command()
