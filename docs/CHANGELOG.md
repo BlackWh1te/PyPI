@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **35 New Essential Developer Tools**: Based on analysis of 27,667+ GitHub developer tool repositories
+  - **API Testing (5 tools)**: APITester, APILoadTester, APIMockServer, APIDocGenerator, APIContractTester
+  - **Code Quality (5 tools)**: CodeLinter, CodeFormatter, DependencyScanner, DependencyUpdater, SASTScanner
+  - **CI/CD (5 tools)**: CIWorkflowGenerator, PipelineOptimizer, TestFrameworkHelper, TestDataGenerator, CoverageReporter
+  - **DevOps Infrastructure (5 tools)**: DockerfileAnalyzer, ContainerSecurityScanner, ImageOptimizer, EnvConfigManager, SecretManager
+  - **Database & Monitoring (5 tools)**: MigrationGenerator, SchemaDiffGenerator, LogAggregator, PerformanceMonitor, ErrorTracker
+  - **Advanced Features (5 tools)**: FeatureFlagManager, ABOptimizer, RolloutManager, CacheAnalyzer, RateLimiter
+  - **Developer Experience (5 tools)**: CodeSnippetGenerator, BoilerplateGenerator, TemplateManager, CodeReviewBot, PRTemplateGenerator
+- **Enhanced ToolCategory enum**: Added comprehensive categories for all new tool types
+- **Total tools**: 95 (up from 60) across 35+ categories
 - **CLI Tool Server**: New `ai-multitool-tools` command for terminal AI integration
   - `list` command: List available tools for specific CLI tools
   - `schema` command: Export tool definitions as JSON
@@ -17,11 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ToolServer class for programmatic tool server access
 - New CLI entry point: `ai-multitool-tools` in pyproject.toml
 - CLI Tool Server documentation in README.md with usage examples
-- **Essential Tools Plan**: Created comprehensive plan for 35 new essential developer tools
-  - Based on analysis of 27,667+ GitHub developer tool repositories
-  - Identified high-priority tools: API Testing, Code Quality, Dependency Management, CI/CD, Testing
-  - Planned implementation in 7 batches across 2 phases
-  - Target: 95 total tools across 35+ categories (from current 60 tools)
 
 ### Changed
 - **Documentation Reorganization**: Moved all .md files (except README.md) to docs/ directory for better project organization
@@ -30,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated release.py to use docs/CHANGELOG.md instead of root CHANGELOG.md
 - Added readme-content-type to pyproject.toml for proper PyPI rendering
 - Updated supported CLI tools section to show all 5 tools as fully supported (✅)
+- Updated ai_multitool/advanced/__init__.py with new tool categories and examples
 
 ### Added (Previous)
 - **OpenCode Adapter**: Full support for OpenCode CLI integration with `OpenCodeAdapter` and `create_opencode_adapter()`

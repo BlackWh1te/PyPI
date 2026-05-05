@@ -37,6 +37,13 @@ This module provides advanced features including:
 - Advanced email (deliverability, engagement)
 - Advanced legal (contract analysis, risk assessment)
 - Advanced IoT (device management, security)
+- Advanced API testing (request testing, load testing, mock servers, docs, contracts)
+- Advanced code quality (linting, formatting, dependency scanning, SAST)
+- Advanced CI/CD (workflow generation, pipeline optimization, test helpers)
+- Advanced DevOps infrastructure (Dockerfile analysis, container security, image optimization)
+- Advanced database & monitoring (migrations, schema diffs, log aggregation, performance, errors)
+- Advanced features (feature flags, A/B testing, rollouts, cache, rate limiting)
+- Advanced developer experience (snippets, boilerplates, templates, code review, PR templates)
 
 Individual advanced tools can be imported directly from their submodules when needed.
 For example:
@@ -49,6 +56,9 @@ For example:
     from ai_multitool.advanced.web.scraper import WebScraper
     from ai_multitool.advanced.seo.optimizer import SEOOptimizer
     from ai_multitool.advanced.infrastructure.provisioner import InfrastructureProvisioner
+    from ai_multitool.advanced.api_testing.tester import APITester
+    from ai_multitool.advanced.code_quality.linter import CodeLinter
+    from ai_multitool.advanced.cicd.workflow_generator import CIWorkflowGenerator
 """
 
 from .base import (
@@ -57,6 +67,7 @@ from .base import (
     ToolPipeline,
     AdvancedToolConfig,
     AdvancedSettings,
+    ToolCategory,
 )
 
 __all__ = [
@@ -65,4 +76,5 @@ __all__ = [
     "ToolPipeline",
     "AdvancedToolConfig",
     "AdvancedSettings",
+    "ToolCategory",
 ]
