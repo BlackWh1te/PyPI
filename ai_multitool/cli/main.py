@@ -8,6 +8,15 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ai_multitool.core.llm_client import ClientFactory
 from ai_multitool.core.models import Message, MessageRole, ChatHistory
+from ai_multitool.core.exceptions import (
+    AIMultitoolError,
+    APIKeyError,
+    APIError,
+    ConfigurationError,
+    FileOperationError,
+    NetworkError,
+    ValidationError,
+)
 from ai_multitool.config.settings import get_settings
 from ai_multitool.utils.file_utils import read_file, read_directory, is_code_file
 from ai_multitool.parsers.code_parser import get_parser
@@ -24,6 +33,24 @@ app = typer.Typer(
 )
 
 console = Console()
+
+
+def handle_error(error: Exception) -> None:
+    """Handle and display errors nicely."""
+    if isinstance(error, AIMultitoolError):
+        # Custom exceptions with suggestions
+        console.print(f"[bold red]Error:[/bold red] {error.message}")
+        if error.suggestion:
+            console.print(f"[cyan]💡 {error.suggestion}[/cyan]")
+        if error.details:
+            console.print(f"[dim]Details: {error.details}[/dim]")
+    elif isinstance(error, KeyboardInterrupt):
+        console.print("\n[yellow]Operation cancelled by user[/yellow]")
+    else:
+        # Unexpected errors
+        console.print(f"[bold red]Unexpected error:[/bold red] {error}")
+        console.print(f"[dim]Error type: {type(error).__name__}[/dim]")
+        console.print("[cyan]💡 If this persists, please report the issue at https://github.com/BlackWh1te/PyPi/issues[/cyan]")
 
 
 @app.command()
@@ -60,49 +87,53 @@ def chat(
         raise typer.Exit(1)
 
     async def run_chat():
-        console.print(Panel(f"[bold cyan]Chatting with {provider}/{model}[/bold cyan]"))
-        console.print(f"[dim]Prompt: {prompt}[/dim]\n")
+        try:
+            console.print(Panel(f"[bold cyan]Chatting with {provider}/{model}[/bold cyan]"))
+            console.print(f"[dim]Prompt: {prompt}[/dim]\n")
 
-        # Create client
-        client = ClientFactory.create_client(provider, api_key, model)
+            # Create client
+            client = ClientFactory.create_client(provider, api_key, model)
 
-        # Create message
-        message = Message(role=MessageRole.USER, content=prompt)
+            # Create message
+            message = Message(role=MessageRole.USER, content=prompt)
 
-        # Get metrics collector
-        metrics_collector = get_metrics_collector()
+            # Get metrics collector
+            metrics_collector = get_metrics_collector()
 
-        # Make API call
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Thinking...", total=None)
+            # Make API call
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Thinking...", total=None)
 
-            if stream:
-                # Streaming response
-                response_text = ""
-                with MetricsContext(metrics_collector, provider, model, "chat") as metrics_ctx:
-                    async for chunk in client.stream_chat([message], temperature=temperature):
-                        console.print(chunk, end="")
-                        response_text += chunk
+                if stream:
+                    # Streaming response
+                    response_text = ""
+                    with MetricsContext(metrics_collector, provider, model, "chat") as metrics_ctx:
+                        async for chunk in client.stream_chat([message], temperature=temperature):
+                            console.print(chunk, end="")
+                            response_text += chunk
                     console.print()  # New line
-            else:
-                # Non-streaming response
-                with MetricsContext(metrics_collector, provider, model, "chat") as metrics_ctx:
-                    response = await client.chat([message], temperature=temperature)
-                    metrics_ctx.tokens_used = response.tokens_used
-                    metrics_ctx.cached = response.cached
-                
-                console.print(Panel(response.content, title="AI Response"))
+                else:
+                    # Non-streaming response
+                    with MetricsContext(metrics_collector, provider, model, "chat") as metrics_ctx:
+                        response = await client.chat([message], temperature=temperature)
+                        metrics_ctx.tokens_used = response.tokens_used
+                        metrics_ctx.cached = response.cached
+                    
+                    console.print(Panel(response.content, title="AI Response"))
 
-                # Show metadata
-                console.print(
-                    f"[dim]Tokens: {response.tokens_used} | "
-                    f"Latency: {response.latency_ms:.0f}ms | "
-                    f"Cached: {'Yes' if response.cached else 'No'}[/dim]"
-                )
+                    # Show metadata
+                    console.print(
+                        f"[dim]Tokens: {response.tokens_used} | "
+                        f"Latency: {response.latency_ms:.0f}ms | "
+                        f"Cached: {'Yes' if response.cached else 'No'}[/dim]"
+                    )
+        except Exception as e:
+            handle_error(e)
+            raise typer.Exit(1)
 
     asyncio.run(run_chat())
 
@@ -136,159 +167,159 @@ def analyze(
     sanitizer = get_sanitizer()
 
     async def run_analyze():
-        console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
-        console.print(f"[dim]Provider: {provider} | Model: {model}[/dim]\n")
+        try:
+            console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
+            console.print(f"[dim]Provider: {provider} | Model: {model}[/dim]\n")
 
-        # Check if path is file or directory
-        path_obj = Path(path)
-        if not path_obj.exists():
-            console.print(f"[red]Error: Path not found: {path}[/red]")
-            raise typer.Exit(1)
+            # Check if path is file or directory
+            path_obj = Path(path)
+            if not path_obj.exists():
+                raise FileOperationError(f"Path not found: {path}", path, suggestion="Check if the file/directory path is correct")
 
-        # Build smart context
-        if context:
-            analysis_context = context_builder.build_context(
-                path,
-                include_git=git,
-                include_related=True,
-                max_related=5,
-                max_context_length=8000
-            )
-            
-            if analysis_context.git_context and analysis_context.git_context.is_repo:
-                console.print(f"[dim]Git: {analysis_context.git_context.branch} | {analysis_context.git_context.status}[/dim]")
-            
-            if analysis_context.code_structure:
-                console.print(f"[dim]Language: {analysis_context.code_structure.language}[/dim]")
-                console.print(f"[dim]Functions: {len(analysis_context.code_structure.functions)}[/dim]")
-                console.print(f"[dim]Classes: {len(analysis_context.code_structure.classes)}[/dim]")
-                console.print(f"[dim]Complexity: {analysis_context.code_structure.complexity_score}[/dim]\n")
-            
-            if structure:
-                # Show context only
-                console.print(Panel(analysis_context.context_string, title="Analysis Context"))
-                return
-            
-            context_str = analysis_context.context_string
-        else:
-            # Use legacy approach
-            git_context_str = ""
-            if git:
-                git_context = git_helper.get_context(str(path_obj.absolute()) if path_obj.is_file() else str(path_obj.absolute()))
-                git_context_str = git_helper.context_to_string(git_context)
-                if git_context.is_repo:
-                    console.print(f"[dim]Git: {git_context.branch} | {git_context.status}[/dim]\n")
+            # Build smart context
+            if context:
+                analysis_context = context_builder.build_context(
+                    path,
+                    include_git=git,
+                    include_related=True,
+                    max_related=5,
+                    max_context_length=8000
+                )
+                
+                if analysis_context.git_context and analysis_context.git_context.is_repo:
+                    console.print(f"[dim]Git: {analysis_context.git_context.branch} | {analysis_context.git_context.status}[/dim]")
+                
+                if analysis_context.code_structure:
+                    console.print(f"[dim]Language: {analysis_context.code_structure.language}[/dim]")
+                    console.print(f"[dim]Functions: {len(analysis_context.code_structure.functions)}[/dim]")
+                    console.print(f"[dim]Classes: {len(analysis_context.code_structure.classes)}[/dim]")
+                    console.print(f"[dim]Complexity: {analysis_context.code_structure.complexity_score}[/dim]\n")
+                
+                if structure:
+                    # Show context only
+                    console.print(Panel(analysis_context.context_string, title="Analysis Context"))
+                    return
+                
+                context_str = analysis_context.context_string
+            else:
+                # Use legacy approach
+                git_context_str = ""
+                if git:
+                    git_context = git_helper.get_context(str(path_obj.absolute()) if path_obj.is_file() else str(path_obj.absolute()))
+                    git_context_str = git_helper.context_to_string(git_context)
+                    if git_context.is_repo:
+                        console.print(f"[dim]Git: {git_context.branch} | {git_context.status}[/dim]\n")
 
-            # Parse code structure
+                # Parse code structure
+                if path_obj.is_file():
+                    structure_obj = parser.parse_file(path)
+                    if not structure_obj:
+                        console.print(f"[yellow]Could not parse file: {path}[/yellow]")
+                        return
+                    
+                    console.print(f"[dim]Language: {structure_obj.language}[/dim]")
+                    console.print(f"[dim]Functions: {len(structure_obj.functions)}[/dim]")
+                    console.print(f"[dim]Classes: {len(structure_obj.classes)}[/dim]")
+                    console.print(f"[dim]Complexity: {structure_obj.complexity_score}[/dim]\n")
+                    
+                    if structure:
+                        # Show structure only
+                        console.print(Panel(parser.structure_to_context(structure_obj), title="Code Structure"))
+                        if git and git_context.is_repo:
+                            console.print(Panel(git_context_str, title="Git Context"))
+                        return
+                    
+                    content = read_file(path)
+                    file_info = f"File: {path_obj.name} ({len(content)} chars)"
+                    structure_context = parser.structure_to_context(structure_obj)
+                    
+                elif path_obj.is_dir():
+                    structures = parser.parse_directory(path, max_files=50)
+                    if not structures:
+                        console.print("[yellow]No code files found in directory[/yellow]")
+                        return
+                    
+                    summary = parser.get_summary(structures)
+                    console.print(f"[dim]{summary}[/dim]\n")
+                    
+                    if structure:
+                        # Show structures only
+                        for s in structures[:10]:
+                            console.print(Panel(parser.structure_to_context(s), title=f"{s.file_path}"))
+                        if len(structures) > 10:
+                            console.print(f"[dim]... and {len(structures) - 10} more files[/dim]")
+                        if git and git_context.is_repo:
+                            console.print(Panel(git_context_str, title="Git Context"))
+                        return
+                    
+                    content = ""
+                    for file_path in [s.file_path for s in structures[:10]]:
+                        try:
+                            file_content = read_file(file_path)
+                            content += f"\n\n# File: {file_path}\n{file_content}"
+                        except Exception as e:
+                            console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
+
+                    file_info = f"Directory: {len(structures)} files analyzed"
+                    structure_context = summary
+                else:
+                    console.print(f"[red]Error: Not a file or directory: {path}[/red]")
+                    raise typer.Exit(1)
+
+                # Build prompt
+                prompt_parts = [f"Analyze the following code:\n\n{file_info}"]
+                if git_context_str:
+                    prompt_parts.append(f"\n{git_context_str}")
+                prompt_parts.extend([
+                    f"\nCode Structure:\n{structure_context}",
+                    f"\n```python\n{content[:10000]}\n```",
+                    "\nPlease provide:",
+                    "1. A summary of what this code does",
+                    "2. Any potential issues or improvements",
+                    "3. Best practices that could be applied",
+                ])
+                context_str = "\n".join(prompt_parts)
+
+            # Read content for AI analysis
             if path_obj.is_file():
-                structure_obj = parser.parse_file(path)
-                if not structure_obj:
-                    console.print(f"[yellow]Could not parse file: {path}[/yellow]")
-                    return
-                
-                console.print(f"[dim]Language: {structure_obj.language}[/dim]")
-                console.print(f"[dim]Functions: {len(structure_obj.functions)}[/dim]")
-                console.print(f"[dim]Classes: {len(structure_obj.classes)}[/dim]")
-                console.print(f"[dim]Complexity: {structure_obj.complexity_score}[/dim]\n")
-                
-                if structure:
-                    # Show structure only
-                    console.print(Panel(parser.structure_to_context(structure_obj), title="Code Structure"))
-                    if git and git_context.is_repo:
-                        console.print(Panel(git_context_str, title="Git Context"))
-                    return
-                
                 content = read_file(path)
-                file_info = f"File: {path_obj.name} ({len(content)} chars)"
-                structure_context = parser.structure_to_context(structure_obj)
                 
-            elif path_obj.is_dir():
-                structures = parser.parse_directory(path, max_files=50)
-                if not structures:
-                    console.print("[yellow]No code files found in directory[/yellow]")
-                    return
-                
-                summary = parser.get_summary(structures)
-                console.print(f"[dim]{summary}[/dim]\n")
-                
-                if structure:
-                    # Show structures only
-                    for s in structures[:10]:
-                        console.print(Panel(parser.structure_to_context(s), title=f"{s.file_path}"))
-                    if len(structures) > 10:
-                        console.print(f"[dim]... and {len(structures) - 10} more files[/dim]")
-                    if git and git_context.is_repo:
-                        console.print(Panel(git_context_str, title="Git Context"))
-                    return
-                
+                # Sanitize content if enabled
+                if sanitize:
+                    result = sanitizer.sanitize(content, path)
+                    if result.issues_found:
+                        console.print(f"[yellow]Security issues found: {', '.join(result.issues_found)}[/yellow]")
+                    if result.warnings:
+                        console.print(f"[dim]Warnings: {', '.join(result.warnings)}[/dim]")
+                    content = result.sanitized_content
+            else:
+                structures = parser.parse_directory(path, max_files=10)
                 content = ""
                 for file_path in [s.file_path for s in structures[:10]]:
                     try:
                         file_content = read_file(file_path)
+                        
+                        # Check file safety
+                        is_safe, warnings = sanitizer.check_file_safety(file_path)
+                        if not is_safe:
+                            console.print(f"[yellow]Skipping potentially unsafe file: {file_path}[/yellow]")
+                            console.print(f"[dim]Reason: {warnings[0]}[/dim]")
+                            continue
+                        
+                        # Sanitize content if enabled
+                        if sanitize:
+                            result = sanitizer.sanitize(file_content, file_path)
+                            if result.issues_found:
+                                console.print(f"[yellow]Security issues in {Path(file_path).name}: {', '.join(result.issues_found)}[/yellow]")
+                            file_content = result.sanitized_content
+                        
                         content += f"\n\n# File: {file_path}\n{file_content}"
                     except Exception as e:
                         console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
 
-                file_info = f"Directory: {len(structures)} files analyzed"
-                structure_context = summary
-            else:
-                console.print(f"[red]Error: Not a file or directory: {path}[/red]")
-                raise typer.Exit(1)
-
-            # Build prompt
-            prompt_parts = [f"Analyze the following code:\n\n{file_info}"]
-            if git_context_str:
-                prompt_parts.append(f"\n{git_context_str}")
-            prompt_parts.extend([
-                f"\nCode Structure:\n{structure_context}",
-                f"\n```python\n{content[:10000]}\n```",
-                "\nPlease provide:",
-                "1. A summary of what this code does",
-                "2. Any potential issues or improvements",
-                "3. Best practices that could be applied",
-            ])
-            context_str = "\n".join(prompt_parts)
-
-        # Read content for AI analysis
-        if path_obj.is_file():
-            content = read_file(path)
-            
-            # Sanitize content if enabled
-            if sanitize:
-                result = sanitizer.sanitize(content, path)
-                if result.issues_found:
-                    console.print(f"[yellow]Security issues found: {', '.join(result.issues_found)}[/yellow]")
-                if result.warnings:
-                    console.print(f"[dim]Warnings: {', '.join(result.warnings)}[/dim]")
-                content = result.sanitized_content
-        else:
-            structures = parser.parse_directory(path, max_files=10)
-            content = ""
-            for file_path in [s.file_path for s in structures[:10]]:
-                try:
-                    file_content = read_file(file_path)
-                    
-                    # Check file safety
-                    is_safe, warnings = sanitizer.check_file_safety(file_path)
-                    if not is_safe:
-                        console.print(f"[yellow]Skipping potentially unsafe file: {file_path}[/yellow]")
-                        console.print(f"[dim]Reason: {warnings[0]}[/dim]")
-                        continue
-                    
-                    # Sanitize content if enabled
-                    if sanitize:
-                        result = sanitizer.sanitize(file_content, file_path)
-                        if result.issues_found:
-                            console.print(f"[yellow]Security issues in {Path(file_path).name}: {', '.join(result.issues_found)}[/yellow]")
-                        file_content = result.sanitized_content
-                    
-                    content += f"\n\n# File: {file_path}\n{file_content}"
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
-
-        # Build final prompt with smart context
-        if context:
-            prompt = f"""Analyze the following code with the provided context:
+            # Build final prompt with smart context
+            if context:
+                prompt = f"""Analyze the following code with the provided context:
 
 {context_str}
 
@@ -302,34 +333,37 @@ Please provide:
 2. Any potential issues or improvements
 3. Best practices that could be applied
 """
-        else:
-            prompt = context_str
+            else:
+                prompt = context_str
 
-        # Create client
-        client = ClientFactory.create_client(provider, api_key, model)
+            # Create client
+            client = ClientFactory.create_client(provider, api_key, model)
 
-        # Get metrics collector
-        metrics_collector = get_metrics_collector()
+            # Get metrics collector
+            metrics_collector = get_metrics_collector()
 
-        # Make API call
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Analyzing...", total=None)
+            # Make API call
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Analyzing...", total=None)
 
-            with MetricsContext(metrics_collector, provider, model, "analyze") as metrics_ctx:
-                response = await client.chat([Message(role=MessageRole.USER, content=prompt)])
-                metrics_ctx.tokens_used = response.tokens_used
-                metrics_ctx.cached = response.cached
+                with MetricsContext(metrics_collector, provider, model, "analyze") as metrics_ctx:
+                    response = await client.chat([Message(role=MessageRole.USER, content=prompt)])
+                    metrics_ctx.tokens_used = response.tokens_used
+                    metrics_ctx.cached = response.cached
 
-        # Display analysis
-        console.print(Panel(response.content, title="AI Analysis"))
-        console.print(
-            f"[dim]Tokens: {response.tokens_used} | "
-            f"Latency: {response.latency_ms:.0f}ms[/dim]"
-        )
+            # Display analysis
+            console.print(Panel(response.content, title="AI Analysis"))
+            console.print(
+                f"[dim]Tokens: {response.tokens_used} | "
+                f"Latency: {response.latency_ms:.0f}ms[/dim]"
+            )
+        except Exception as e:
+            handle_error(e)
+            raise typer.Exit(1)
 
     asyncio.run(run_analyze())
 

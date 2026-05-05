@@ -7,6 +7,16 @@ import time
 import hashlib
 
 from .models import Message, LLMResponse, ModelInfo
+from .exceptions import (
+    APIError,
+    AuthenticationError,
+    RateLimitError,
+    QuotaExceededError,
+    ModelNotFoundError,
+    TimeoutError as CustomTimeoutError,
+    NetworkError,
+    ConfigurationError
+)
 
 
 class RateLimiter:
@@ -125,12 +135,25 @@ class AnthropicClient(BaseLLMClient):
     """Anthropic Claude client"""
 
     def __init__(self, api_key: str, model: str = "claude-3-sonnet-20240229", timeout: int = 120, enable_cache: bool = True):
+        if not api_key or not api_key.strip():
+            raise ConfigurationError("API key is required for Anthropic", suggestion="Set ANTHROPIC_API_KEY in .env or use 'ai-multitool keys set anthropic'")
+        
         super().__init__(api_key, model, timeout, enable_cache)
         try:
             import anthropic
             self.client = anthropic.AsyncAnthropic(api_key=api_key, timeout=timeout)
-        except ImportError:
-            raise ImportError("anthropic package is required. Install with: pip install anthropic")
+        except ImportError as e:
+            raise ConfigurationError(
+                "anthropic package is required",
+                suggestion="Install with: pip install anthropic",
+                details={"error": str(e)}
+            )
+        except Exception as e:
+            raise ConfigurationError(
+                f"Failed to initialize Anthropic client",
+                suggestion="Check your API key and internet connection",
+                details={"error": str(e)}
+            )
 
     async def chat(
         self,
@@ -141,6 +164,9 @@ class AnthropicClient(BaseLLMClient):
         **kwargs
     ) -> LLMResponse:
         """Send chat request to Anthropic with retry and caching"""
+        if not messages:
+            raise ConfigurationError("Messages list cannot be empty", suggestion="Provide at least one message")
+        
         # Check cache first
         if self._cache:
             cached = await self._cache.get(messages, temperature, max_tokens)
@@ -150,8 +176,10 @@ class AnthropicClient(BaseLLMClient):
         # Rate limiting
         await self._rate_limiter.acquire()
 
-        # Retry logic
+        # Retry logic with better error handling
         max_retries = 3
+        last_error = None
+        
         for attempt in range(max_retries):
             try:
                 start_time = time.time()
@@ -189,9 +217,48 @@ class AnthropicClient(BaseLLMClient):
 
                 return result
 
-            except Exception as e:
+            except anthropic.AuthenticationError as e:
+                raise AuthenticationError("anthropic")
+            except anthropic.RateLimitError as e:
+                retry_after = getattr(e, 'retry_after', None)
                 if attempt == max_retries - 1:
-                    raise
+                    raise RateLimitError(retry_after=retry_after)
+                await asyncio.sleep(retry_after or 2 ** attempt)
+            except anthropic.BadRequestError as e:
+                if "model" in str(e).lower():
+                    raise ModelNotFoundError(self.model, "anthropic")
+                raise APIError(f"Bad request: {e}", status_code=400, response_body=str(e))
+            except anthropic.UnprocessableEntityError as e:
+                raise APIError(f"Unprocessable entity: {e}", status_code=422, response_body=str(e))
+            except anthropic.InternalServerError as e:
+                if attempt == max_retries - 1:
+                    raise NetworkError(f"Anthropic internal server error: {e}")
+                await asyncio.sleep(2 ** attempt)
+            except anthropic.APITimeoutError as e:
+                if attempt == max_retries - 1:
+                    raise CustomTimeoutError("Anthropic API call", self.timeout)
+                await asyncio.sleep(2 ** attempt)
+            except anthropic.APIConnectionError as e:
+                if attempt == max_retries - 1:
+                    raise NetworkError(f"Failed to connect to Anthropic: {e}")
+                await asyncio.sleep(2 ** attempt)
+            except anthropic.APIStatusError as e:
+                if e.status_code == 429:
+                    raise RateLimitError()
+                elif e.status_code == 401:
+                    raise AuthenticationError("anthropic")
+                elif e.status_code == 429:
+                    raise QuotaExceededError("anthropic")
+                else:
+                    raise APIError(
+                        f"API error: {e}",
+                        status_code=e.status_code,
+                        response_body=str(e)
+                    )
+            except Exception as e:
+                last_error = e
+                if attempt == max_retries - 1:
+                    raise APIError(f"Unexpected error: {e}", details={"error_type": type(e).__name__})
                 # Exponential backoff
                 await asyncio.sleep(2 ** attempt)
 
@@ -204,21 +271,38 @@ class AnthropicClient(BaseLLMClient):
         **kwargs
     ) -> AsyncIterator[str]:
         """Stream chat response from Anthropic"""
+        if not messages:
+            raise ConfigurationError("Messages list cannot be empty", suggestion="Provide at least one message")
+        
         anthropic_messages = [
             {"role": m.role.value, "content": m.content}
             for m in messages
         ]
 
-        async with self.client.messages.stream(
-            model=self.model,
-            messages=anthropic_messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=system_prompt,
-            **kwargs
-        ) as stream:
-            async for text in stream.text_stream:
-                yield text
+        try:
+            async with self.client.messages.stream(
+                model=self.model,
+                messages=anthropic_messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=system_prompt,
+                **kwargs
+            ) as stream:
+                async for text in stream.text_stream:
+                    yield text
+        except anthropic.AuthenticationError:
+            raise AuthenticationError("anthropic")
+        except anthropic.RateLimitError as e:
+            retry_after = getattr(e, 'retry_after', None)
+            raise RateLimitError(retry_after=retry_after)
+        except anthropic.BadRequestError as e:
+            if "model" in str(e).lower():
+                raise ModelNotFoundError(self.model, "anthropic")
+            raise APIError(f"Bad request: {e}", status_code=400)
+        except anthropic.APIConnectionError as e:
+            raise NetworkError(f"Failed to connect to Anthropic: {e}")
+        except Exception as e:
+            raise APIError(f"Streaming error: {e}", details={"error_type": type(e).__name__})
 
     def get_model_info(self) -> ModelInfo:
         """Get Anthropic model info"""
@@ -236,12 +320,25 @@ class OpenAIClient(BaseLLMClient):
     """OpenAI GPT client"""
 
     def __init__(self, api_key: str, model: str = "gpt-4-turbo-preview", timeout: int = 120, enable_cache: bool = True):
+        if not api_key or not api_key.strip():
+            raise ConfigurationError("API key is required for OpenAI", suggestion="Set OPENAI_API_KEY in .env or use 'ai-multitool keys set openai'")
+        
         super().__init__(api_key, model, timeout, enable_cache)
         try:
             import openai
             self.client = openai.AsyncOpenAI(api_key=api_key, timeout=timeout)
-        except ImportError:
-            raise ImportError("openai package is required. Install with: pip install openai")
+        except ImportError as e:
+            raise ConfigurationError(
+                "openai package is required",
+                suggestion="Install with: pip install openai",
+                details={"error": str(e)}
+            )
+        except Exception as e:
+            raise ConfigurationError(
+                f"Failed to initialize OpenAI client",
+                suggestion="Check your API key and internet connection",
+                details={"error": str(e)}
+            )
 
     async def chat(
         self,
@@ -251,6 +348,9 @@ class OpenAIClient(BaseLLMClient):
         **kwargs
     ) -> LLMResponse:
         """Send chat request to OpenAI with retry and caching"""
+        if not messages:
+            raise ConfigurationError("Messages list cannot be empty", suggestion="Provide at least one message")
+        
         # Check cache first
         if self._cache:
             cached = await self._cache.get(messages, temperature, max_tokens)
@@ -260,8 +360,10 @@ class OpenAIClient(BaseLLMClient):
         # Rate limiting
         await self._rate_limiter.acquire()
 
-        # Retry logic
+        # Retry logic with better error handling
         max_retries = 3
+        last_error = None
+        
         for attempt in range(max_retries):
             try:
                 start_time = time.time()
@@ -298,9 +400,41 @@ class OpenAIClient(BaseLLMClient):
 
                 return result
 
-            except Exception as e:
+            except openai.AuthenticationError as e:
+                raise AuthenticationError("openai")
+            except openai.RateLimitError as e:
                 if attempt == max_retries - 1:
-                    raise
+                    raise RateLimitError()
+                await asyncio.sleep(2 ** attempt)
+            except openai.BadRequestError as e:
+                if "model" in str(e).lower():
+                    raise ModelNotFoundError(self.model, "openai")
+                raise APIError(f"Bad request: {e}", status_code=400, response_body=str(e))
+            except openai.APITimeoutError as e:
+                if attempt == max_retries - 1:
+                    raise CustomTimeoutError("OpenAI API call", self.timeout)
+                await asyncio.sleep(2 ** attempt)
+            except openai.APIConnectionError as e:
+                if attempt == max_retries - 1:
+                    raise NetworkError(f"Failed to connect to OpenAI: {e}")
+                await asyncio.sleep(2 ** attempt)
+            except openai.APIStatusError as e:
+                if e.status_code == 429:
+                    raise RateLimitError()
+                elif e.status_code == 401:
+                    raise AuthenticationError("openai")
+                elif e.status_code == 429:
+                    raise QuotaExceededError("openai")
+                else:
+                    raise APIError(
+                        f"API error: {e}",
+                        status_code=e.status_code,
+                        response_body=str(e)
+                    )
+            except Exception as e:
+                last_error = e
+                if attempt == max_retries - 1:
+                    raise APIError(f"Unexpected error: {e}", details={"error_type": type(e).__name__})
                 # Exponential backoff
                 await asyncio.sleep(2 ** attempt)
 
@@ -312,23 +446,39 @@ class OpenAIClient(BaseLLMClient):
         **kwargs
     ) -> AsyncIterator[str]:
         """Stream chat response from OpenAI"""
+        if not messages:
+            raise ConfigurationError("Messages list cannot be empty", suggestion="Provide at least one message")
+        
         openai_messages = [
             {"role": m.role.value, "content": m.content}
             for m in messages
         ]
 
-        stream = await self.client.chat.completions.create(
-            model=self.model,
-            messages=openai_messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stream=True,
-            **kwargs
-        )
+        try:
+            stream = await self.client.chat.completions.create(
+                model=self.model,
+                messages=openai_messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stream=True,
+                **kwargs
+            )
 
-        async for chunk in stream:
-            if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+            async for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except openai.AuthenticationError:
+            raise AuthenticationError("openai")
+        except openai.RateLimitError:
+            raise RateLimitError()
+        except openai.BadRequestError as e:
+            if "model" in str(e).lower():
+                raise ModelNotFoundError(self.model, "openai")
+            raise APIError(f"Bad request: {e}", status_code=400)
+        except openai.APIConnectionError as e:
+            raise NetworkError(f"Failed to connect to OpenAI: {e}")
+        except Exception as e:
+            raise APIError(f"Streaming error: {e}", details={"error_type": type(e).__name__})
 
     def get_model_info(self) -> ModelInfo:
         """Get OpenAI model info"""
@@ -359,8 +509,19 @@ class ClientFactory:
             "openai": OpenAIClient,
         }
 
+        if not provider or not provider.strip():
+            raise ConfigurationError(
+                "Provider is required",
+                suggestion="Use 'anthropic' or 'openai'"
+            )
+        
+        provider = provider.lower()
+        
         if provider not in providers:
-            raise ValueError(f"Unknown provider: {provider}. Available: {list(providers.keys())}")
+            raise ConfigurationError(
+                f"Unknown provider: {provider}",
+                suggestion=f"Available providers: {', '.join(providers.keys())}"
+            )
 
         client_class = providers[provider]
 
@@ -371,4 +532,13 @@ class ClientFactory:
             elif provider == "openai":
                 model = "gpt-4-turbo-preview"
 
-        return client_class(api_key, model, enable_cache=enable_cache, **kwargs)
+        try:
+            return client_class(api_key, model, enable_cache=enable_cache, **kwargs)
+        except Exception as e:
+            if isinstance(e, (ConfigurationError, APIError)):
+                raise
+            raise ConfigurationError(
+                f"Failed to create {provider} client",
+                suggestion="Check your API key and configuration",
+                details={"error": str(e), "error_type": type(e).__name__}
+            )
