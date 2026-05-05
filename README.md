@@ -91,6 +91,57 @@ adapter = create_devin_adapter(
 tools = adapter.get_tool_definitions()
 ```
 
+#### OpenCode Integration
+
+```python
+from ai_multitool import create_opencode_adapter
+
+# Create adapter
+adapter = create_opencode_adapter(
+    api_key="your-api-key",
+    provider="anthropic",
+    model="claude-3-sonnet-20240229",
+    enable_code_analysis=True,
+)
+
+# Get tools in OpenAI format
+tools = adapter.get_tool_definitions()
+```
+
+#### Gemini CLI Integration
+
+```python
+from ai_multitool import create_gemini_adapter
+
+# Create adapter
+adapter = create_gemini_adapter(
+    api_key="your-api-key",
+    provider="anthropic",
+    model="claude-3-sonnet-20240229",
+    enable_code_analysis=True,
+)
+
+# Get tools in OpenAI format
+tools = adapter.get_tool_definitions()
+```
+
+#### Qwen CLI Integration
+
+```python
+from ai_multitool import create_qwen_adapter
+
+# Create adapter
+adapter = create_qwen_adapter(
+    api_key="your-api-key",
+    provider="anthropic",
+    model="claude-3-sonnet-20240229",
+    enable_code_analysis=True,
+)
+
+# Get tools in OpenAI format
+tools = adapter.get_tool_definitions()
+```
+
 ### Creating Custom Adapters
 
 ```python
@@ -624,9 +675,9 @@ See `examples/advanced_features.py` for complete usage examples.
 
 - ✅ Claude Code
 - ✅ Devin
-- 🚧 OpenCode (coming soon)
-- 🚧 Gemini CLI (coming soon)
-- 🚧 Qwen CLI (coming soon)
+- ✅ OpenCode
+- ✅ Gemini CLI
+- ✅ Qwen CLI
 
 ## Development
 

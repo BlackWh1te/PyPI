@@ -93,6 +93,12 @@ from .adapters import (
     create_claude_code_adapter,
     DevinAdapter,
     create_devin_adapter,
+    OpenCodeAdapter,
+    create_opencode_adapter,
+    GeminiAdapter,
+    create_gemini_adapter,
+    QwenAdapter,
+    create_qwen_adapter,
 )
 
 # Advanced tools (base only - advanced tool imports disabled due to naming inconsistencies)
@@ -188,6 +194,12 @@ __all__ = [
     "create_claude_code_adapter",
     "DevinAdapter",
     "create_devin_adapter",
+    "OpenCodeAdapter",
+    "create_opencode_adapter",
+    "GeminiAdapter",
+    "create_gemini_adapter",
+    "QwenAdapter",
+    "create_qwen_adapter",
 
     # Advanced tools (base only)
     "AdvancedTool",
