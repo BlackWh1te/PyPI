@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- File reading utility with code file detection
+- Analyze command with file and directory support
+- Smart content truncation for large files
+- Directory analysis (up to 10 code files)
+
+### Changed
+- Updated README with current working features
+- Added usage examples for analyze command
+
+## [0.1.0] - 2025-05-05
+
+### Added
 - Core LLM client module with Anthropic and OpenAI integration
 - Response models (Message, LLMResponse, ChatHistory, ModelInfo)
 - Streaming support for AI responses
@@ -22,19 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - config command to view/set configuration
 - Rich terminal UI with progress indicators
 - Configuration management with Pydantic Settings
-
-### Changed
-- Initial project structure setup
-
-### Fixed
-- Fixed formatting issues in list-models command
-
-## [0.1.0] - 2025-05-05
-
-### Added
 - Initial project structure
 - Basic CLI skeleton with Typer
-- Configuration module with Pydantic
 - Requirements.txt with core dependencies
 - pyproject.toml for package configuration
 - README.md with project documentation
@@ -43,3 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Initial commit
+
+### Fixed
+- Fixed formatting issues in list-models command
