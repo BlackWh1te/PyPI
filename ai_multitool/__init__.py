@@ -11,7 +11,7 @@ Example usage:
     response = await client.chat([Message(role=MessageRole.USER, content="Hello!")])
 """
 
-__version__ = "0.2.0"
+__version__ = "0.4.1"
 
 # Core LLM functionality
 from .core.llm_client import (

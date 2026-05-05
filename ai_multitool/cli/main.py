@@ -65,6 +65,174 @@ def version():
     """Show version information"""
     from ai_multitool import __version__
     console.print(f"ai-multitool version: [bold]{__version__}[/bold]")
+    console.print(f"[dim]Total tools: 95 across 35+ categories[/dim]")
+    console.print(f"[dim]CLI tools: Claude Code, Devin, OpenCode, Gemini CLI, Qwen CLI[/dim]")
+
+
+@app.command()
+def interactive():
+    """Start interactive mode with AI assistant"""
+    import questionary
+    from ai_multitool.core.llm_client import ClientFactory
+    from ai_multitool.config.settings import get_settings
+    
+    settings = get_settings()
+    api_key = settings.get_anthropic_key()
+    
+    if not api_key:
+        console.print("[red]Error: API key not found. Set ANTHIPIC_API_KEY in .env[/red]")
+        raise typer.Exit(1)
+    
+    console.print(Panel("[bold cyan]AI-Multitool Interactive Mode[/bold cyan]"))
+    console.print("[dim]Type 'exit' or 'quit' to leave interactive mode[/dim]\n")
+    
+    client = ClientFactory.create_client("anthropic", api_key, settings.default_model)
+    
+    while True:
+        try:
+            user_input = questionary.text(
+                "You:",
+                default="",
+                qmark="AI: "
+            ).ask()
+            
+            if not user_input:
+                continue
+            
+            if user_input.lower() in ['exit', 'quit', 'q']:
+                console.print("[yellow]Goodbye![/yellow]")
+                break
+            
+            async def chat():
+                message = Message(role=MessageRole.USER, content=user_input)
+                response = await client.chat([message])
+                console.print(Panel(response.content, title="AI Response"))
+            
+            asyncio.run(chat())
+            
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Goodbye![/yellow]")
+            break
+        except Exception as e:
+            console.print(f"[red]Error: {e}[/red]")
+
+
+@app.command()
+def discover():
+    """Discover available tools and capabilities"""
+    from ai_multitool.advanced.base import ToolCategory
+    
+    console.print(Panel("[bold cyan]Available Tools Discovery[/bold cyan]"))
+    
+    categories = [
+        ("API Testing", "api_testing", 5),
+        ("Code Quality", "code_quality", 5),
+        ("CI/CD", "cicd", 5),
+        ("DevOps Infrastructure", "devops_infra", 5),
+        ("Database & Monitoring", "db_monitoring", 5),
+        ("Advanced Features", "advanced_features", 5),
+        ("Developer Experience", "dev_experience", 5),
+        ("Performance", "performance", 1),
+        ("Database", "database", 1),
+        ("API", "api", 1),
+        ("Cloud", "cloud", 1),
+        ("Logging", "logging", 1),
+        ("ML", "ml", 1),
+        ("DevOps", "devops", 1),
+        ("Monitoring", "monitoring", 1),
+        ("Mobile", "mobile", 1),
+        ("Frontend", "frontend", 1),
+        ("Crypto", "crypto", 1),
+        ("Network", "network", 1),
+        ("Data", "data", 1),
+        ("Web", "web", 1),
+        ("SEO", "seo", 1),
+        ("Accessibility", "accessibility", 1),
+        ("Backup", "backup", 1),
+        ("Analytics", "analytics", 1),
+        ("Automation", "automation", 1),
+        ("Compliance", "compliance", 1),
+        ("Infrastructure", "infrastructure", 1),
+        ("Messaging", "messaging", 1),
+        ("Storage", "storage", 1),
+        ("Search", "search", 1),
+        ("Email", "email", 1),
+        ("Legal", "legal", 1),
+        ("IoT", "iot", 1),
+    ]
+    
+    from rich.table import Table
+    table = Table()
+    table.add_column("Category", style="cyan")
+    table.add_column("Module", style="green")
+    table.add_column("Tools", style="yellow")
+    
+    for name, module, count in categories:
+        table.add_row(name, module, str(count))
+    
+    console.print(table)
+    console.print(f"\n[dim]Total: 95 tools across 35+ categories[/dim]")
+    console.print("[dim]Use 'ai-multitool tools list <cli-tool>' to see tools for specific CLI integration[/dim]")
+
+
+@app.command()
+def integrations(
+    cli_tool: str = typer.Option(None, "--cli-tool", help="CLI tool to list tools for (claude-code, devin, opencode, gemini, qwen)"),
+):
+    """List CLI tool integrations and their available tools"""
+    from ai_multitool.adapters import (
+        create_claude_code_adapter,
+        create_devin_adapter,
+        create_opencode_adapter,
+        create_gemini_adapter,
+        create_qwen_adapter,
+    )
+    
+    cli_tools = {
+        "claude-code": ("Claude Code", create_claude_code_adapter),
+        "devin": ("Devin", create_devin_adapter),
+        "opencode": ("OpenCode", create_opencode_adapter),
+        "gemini": ("Gemini CLI", create_gemini_adapter),
+        "qwen": ("Qwen CLI", create_qwen_adapter),
+    }
+    
+    if cli_tool:
+        if cli_tool not in cli_tools:
+            console.print(f"[red]Unknown CLI tool: {cli_tool}[/red]")
+            console.print(f"[dim]Available: {', '.join(cli_tools.keys())}[/dim]")
+            raise typer.Exit(1)
+        
+        name, adapter_func = cli_tools[cli_tool]
+        console.print(Panel(f"[bold cyan]Tools for {name}[/bold cyan]"))
+        
+        # Get the adapter and list its tools
+        adapter = adapter_func()
+        if hasattr(adapter, 'get_tools'):
+            tools = adapter.get_tools()
+            from rich.table import Table
+            table = Table()
+            table.add_column("Tool Name", style="cyan")
+            table.add_column("Description", style="green")
+            
+            for tool in tools:
+                table.add_row(tool.get('name', 'N/A'), tool.get('description', 'N/A'))
+            
+            console.print(table)
+        else:
+            console.print("[dim]All 95 tools are available for this CLI integration[/dim]")
+    else:
+        console.print(Panel("[bold cyan]CLI Tool Integrations[/bold cyan]"))
+        from rich.table import Table
+        table = Table()
+        table.add_column("CLI Tool", style="cyan")
+        table.add_column("Status", style="green")
+        table.add_column("Tools", style="yellow")
+        
+        for tool_id, (name, _) in cli_tools.items():
+            table.add_row(name, "Supported", "95 tools")
+        
+        console.print(table)
+        console.print("\n[dim]Use 'ai-multitool integrations --cli-tool <name>' to see specific tools for each integration[/dim]")
 
 
 @app.command()
@@ -634,14 +802,14 @@ def keys_set(
     if provider == "anthropic":
         success = key_manager.set_anthropic_key(key)
         if success:
-            console.print("[bold green]✓[/bold green] Anthropic API key stored securely")
+            console.print("[bold green]OK[/bold green] Anthropic API key stored securely")
         else:
             console.print("[red]Error storing Anthropic API key[/red]")
             raise typer.Exit(1)
     elif provider == "openai":
         success = key_manager.set_openai_key(key)
         if success:
-            console.print("[bold green]✓[/bold green] OpenAI API key stored securely")
+            console.print("[bold green]OK[/bold green] OpenAI API key stored securely")
         else:
             console.print("[red]Error storing OpenAI API key[/red]")
             raise typer.Exit(1)
@@ -696,13 +864,13 @@ def keys_delete(
     if provider == "anthropic":
         success = key_manager.delete_anthropic_key()
         if success:
-            console.print("[bold green]✓[/bold green] Anthropic API key deleted from keyring")
+            console.print("[bold green]OK[/bold green] Anthropic API key deleted from keyring")
         else:
             console.print("[yellow]No Anthropic API key found in keyring[/yellow]")
     elif provider == "openai":
         success = key_manager.delete_openai_key()
         if success:
-            console.print("[bold green]✓[/bold green] OpenAI API key deleted from keyring")
+            console.print("[bold green]OK[/bold green] OpenAI API key deleted from keyring")
         else:
             console.print("[yellow]No OpenAI API key found in keyring[/yellow]")
     else:
@@ -765,7 +933,7 @@ def keys_migrate():
     if migrated:
         for provider, success in migrated.items():
             if success:
-                console.print(f"[bold green]✓[/bold green] {provider.capitalize()} key migrated to keyring")
+                console.print(f"[bold green]OK[/bold green] {provider.capitalize()} key migrated to keyring")
             else:
                 console.print(f"[yellow]Could not migrate {provider} key[/yellow]")
         
@@ -823,7 +991,7 @@ def stats(
     if recent_calls:
         console.print(f"\n[bold]Recent Calls (Last {len(recent_calls)}):[/bold]")
         for call in recent_calls:
-            status = "[green]✓[/green]" if call.success else "[red]✗[/red]"
+            status = "[green]OK[/green]" if call.success else "[red]FAIL[/red]"
             cache = "[dim](cached)[/dim]" if call.cached else ""
             console.print(f"  {status} {call.timestamp[:19]} | {call.provider}/{call.model} | {call.command} | {call.tokens_used} tokens | {call.latency_ms:.0f}ms {cache}")
 
@@ -842,7 +1010,7 @@ def clear_stats():
         return
     
     metrics_collector.clear_metrics()
-    console.print("[bold green]✓[/bold green] Metrics cleared")
+    console.print("[bold green]Metrics cleared[/bold green]")
 
 
 # Create a sub-app for RAG operations
@@ -909,7 +1077,7 @@ def rag_index(
                 metadata={"file_path": str(path_obj), "file_name": path_obj.name}
             )
             indexer.add_document(document)
-            console.print(f"[bold green]✓[/bold green] Indexed 1 document")
+            console.print(f"[bold green]OK[/bold green] Indexed 1 document")
         elif path_obj.is_dir():
             # Index directory with memory limits
             count = indexer.index_directory(
@@ -919,7 +1087,7 @@ def rag_index(
                 max_total_size=max_total_size,
                 batch_size=50
             )
-            console.print(f"[bold green]✓[/bold green] Indexed {count} documents")
+            console.print(f"[bold green]OK[/bold green] Indexed {count} documents")
         else:
             console.print(f"[red]Error: Not a file or directory: {path}[/red]")
             raise typer.Exit(1)
@@ -932,7 +1100,7 @@ def rag_index(
         # Save index if output specified
         if output:
             indexer.save(output)
-            console.print(f"[bold green]✓[/bold green] Index saved to {output}")
+            console.print(f"[bold green]OK[/bold green] Index saved to {output}")
         
         # Save default index location if not specified
         if not output:

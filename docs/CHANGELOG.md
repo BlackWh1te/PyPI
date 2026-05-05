@@ -37,6 +37,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated supported CLI tools section to show all 5 tools as fully supported (✅)
 - Updated ai_multitool/advanced/__init__.py with new tool categories and examples
 
+## [0.4.1] - 2025-05-05
+
+### Added
+- **CLI Experience Enhancements**:
+  - Enhanced `version` command to display total tool count (95) and supported CLI integrations
+  - Added `interactive` command for interactive AI chat mode with questionary prompts
+  - Added `discover` command to browse available tools by category with rich table display
+  - Added `integrations` command to list CLI-specific tool integrations (claude-code, devin, opencode, gemini, qwen)
+  - Added `questionary>=2.0.0` dependency for interactive CLI prompts
+- **Feature Enhancement Plan**: Created comprehensive enhancement plan document in docs/FEATURE_ENHANCEMENT_PLAN.md
+  - Outlines 6 phases of improvements: CLI, Performance, Error Handling, Documentation, Testing, Advanced Features
+  - Defines success metrics and implementation timeline
+  - Identifies new dependencies and risk mitigations
+
+### Changed
+- Fixed Unicode encoding issues for Windows console by removing emoji characters (replaced with ASCII equivalents)
+- Renamed `tools` command to `integrations` to avoid conflict with existing tools sub-app
+- Bumped version to 0.4.1
+
 ## [Unreleased]
 
 ### Added (Previous)
