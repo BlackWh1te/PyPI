@@ -4,7 +4,7 @@ This document summarizes the new advanced tools added to the ai-multitool codeba
 
 ## Overview
 
-Added 12 new tool categories with 12 new advanced tools, expanding the total tool count from 34 to 46.
+Added 26 new tool categories with 26 new advanced tools, expanding the total tool count from 34 to 60.
 
 ## New Tools Added
 
@@ -217,6 +217,230 @@ Added 12 new tool categories with 12 new advanced tools, expanding the total too
 - **Parameters**: pipeline_code, pipeline_file, framework (airflow/dbt/spark/pandas), focus (performance/quality/cost/reliability), include_quality_checks
 - **Use Case**: Optimize data pipelines, improve data quality, reduce processing costs
 
+### 14. Web Tools (`ai_multitool/advanced/web/`)
+
+#### WebScraper
+- **File**: `scraper.py`
+- **Purpose**: AI-powered web scraping with selector generation
+- **Features**:
+  - Data extraction strategies
+  - CSS/XPath selector generation
+  - Anti-scraping evasion
+  - Rate limiting design
+  - Data cleaning
+  - Storage strategies
+- **Parameters**: url, html_content, data_target, focus (selectors/anti_bot/cleaning/storage), include_code
+- **Use Case**: Scrape web data, generate selectors, avoid anti-bot measures
+
+### 15. SEO Tools (`ai_multitool/advanced/seo/`)
+
+#### SEOOptimizer
+- **File**: `optimizer.py`
+- **Purpose**: AI-powered SEO optimization
+- **Features**:
+  - Keyword optimization
+  - Meta tag analysis
+  - Content structure
+  - Readability
+  - Internal linking
+  - Technical SEO
+  - Performance impact
+- **Parameters**: content, url, keywords, focus (keywords/technical/content/performance), include_suggestions
+- **Use Case**: Optimize web pages for search engines, improve rankings
+
+### 16. Accessibility Tools (`ai_multitool/advanced/accessibility/`)
+
+#### AccessibilityAuditor
+- **File**: `auditor.py`
+- **Purpose**: AI-powered accessibility auditing (WCAG compliance)
+- **Features**:
+  - WCAG compliance checking
+  - Screen reader compatibility
+  - Keyboard navigation
+  - Color contrast
+  - Alt text analysis
+  - ARIA attributes
+  - Focus management
+- **Parameters**: html_content, component_code, wcag_level (A/AA/AAA), focus (contrast/keyboard/screen_reader/aria), include_fixes
+- **Use Case**: Audit accessibility, ensure WCAG compliance, improve screen reader support
+
+### 17. Backup Tools (`ai_multitool/advanced/backup/`)
+
+#### BackupStrategy
+- **File**: `strategy.py`
+- **Purpose**: AI-powered backup strategy design
+- **Features**:
+  - Backup frequency
+  - Retention policies
+  - Storage optimization
+  - Recovery testing
+  - Disaster recovery
+  - Encryption strategies
+  - Cost optimization
+- **Parameters**: data_type, data_size, rpo (Recovery Point Objective), rto (Recovery Time Objective), focus (frequency/storage/recovery/cost), include_encryption
+- **Use Case**: Design backup strategies, plan disaster recovery, optimize backup costs
+
+### 18. Analytics Tools (`ai_multitool/advanced/analytics/`)
+
+#### AnalyticsReporter
+- **File**: `reporter.py`
+- **Purpose**: AI-powered analytics reporting and dashboard design
+- **Features**:
+  - Report generation
+  - Dashboard design
+  - KPI selection
+  - Data visualization
+  - Trend analysis
+  - Anomaly detection
+  - Insight generation
+- **Parameters**: data_description, metrics, goal, focus (kpis/visualization/insights/dashboard), include_sql
+- **Use Case**: Generate analytics reports, design dashboards, select KPIs
+
+### 19. Automation Tools (`ai_multitool/advanced/automation/`)
+
+#### WorkflowDesigner
+- **File**: `workflow.py`
+- **Purpose**: AI-powered workflow automation design
+- **Features**:
+  - Workflow design
+  - Automation opportunities
+  - Task dependencies
+  - Error handling
+  - Retry strategies
+  - Notification triggers
+  - Integration points
+- **Parameters**: process_description, steps, tools, focus (dependencies/error_handling/triggers/integration), include_diagram
+- **Use Case**: Design automated workflows, map dependencies, plan automation
+
+### 20. Compliance Tools (`ai_multitool/advanced/compliance/`)
+
+#### ComplianceAuditor
+- **File**: `auditor.py`
+- **Purpose**: AI-powered compliance auditing
+- **Features**:
+  - GDPR compliance
+  - HIPAA compliance
+  - SOC 2 compliance
+  - PCI-DSS compliance
+  - Data retention
+  - Privacy policies
+  - Audit trails
+  - Risk assessment
+- **Parameters**: system_description, standards (GDPR/HIPAA/SOC2/PCI-DSS), data_type, focus (data_privacy/security/audit_trail/risk), include_checklist
+- **Use Case**: Audit compliance, ensure GDPR/HIPAA compliance, generate checklists
+
+### 21. Infrastructure Tools (`ai_multitool/advanced/infrastructure/`)
+
+#### InfrastructureProvisioner
+- **File**: `provisioner.py`
+- **Purpose**: AI-powered infrastructure provisioning
+- **Features**:
+  - Resource sizing
+  - Cost optimization
+  - High availability
+  - Scalability
+  - Security groups
+  - Network design
+  - Multi-region strategy
+- **Parameters**: service_type, expected_load, provider (aws/gcp/azure), focus (cost/ha/scalability/security), include_terraform
+- **Use Case**: Provision cloud infrastructure, optimize costs, ensure high availability
+
+### 22. Messaging Tools (`ai_multitool/advanced/messaging/`)
+
+#### QueueAnalyzer
+- **File**: `queue_analyzer.py`
+- **Purpose**: AI-powered message queue analysis
+- **Features**:
+  - Queue configuration
+  - Message ordering
+  - Dead letter queues
+  - Retry policies
+  - Throughput optimization
+  - Consumer scaling
+  - Backpressure handling
+- **Parameters**: queue_type (rabbitmq/kafka/sqs/redis), message_type, throughput, focus (configuration/retry/scaling/ordering), include_examples
+- **Use Case**: Optimize message queues, improve throughput, handle backpressure
+
+### 23. Storage Tools (`ai_multitool/advanced/storage/`)
+
+#### StorageOptimizer
+- **File**: `optimizer.py`
+- **Purpose**: AI-powered storage optimization
+- **Features**:
+  - Storage tier selection
+  - Compression strategies
+  - Lifecycle policies
+  - Access patterns
+  - Cost optimization
+  - Performance tuning
+  - Data archiving
+- **Parameters**: data_type, access_pattern (hot/warm/cold/mixed), provider (s3/gcs/azure), focus (cost/performance/lifecycle/compression), include_policy
+- **Use Case**: Optimize storage costs, implement lifecycle policies, select appropriate tiers
+
+### 24. Search Tools (`ai_multitool/advanced/search/`)
+
+#### SearchAnalyzer
+- **File**: `analyzer.py`
+- **Purpose**: AI-powered search and indexing analysis
+- **Features**:
+  - Search schema design
+  - Indexing strategy
+  - Query optimization
+  - Relevance tuning
+  - Faceted search
+  - Synonyms handling
+  - Spell correction
+- **Parameters**: data_description, search_engine (elasticsearch/solr/algolia), query_types, focus (schema/indexing/query/relevance), include_mapping
+- **Use Case**: Design search schemas, optimize queries, improve relevance
+
+### 25. Email Tools (`ai_multitool/advanced/email/`)
+
+#### EmailAnalyzer
+- **File**: `analyzer.py`
+- **Purpose**: AI-powered email analysis
+- **Features**:
+  - Content optimization
+  - Deliverability
+  - Spam prevention
+  - Personalization
+  - A/B testing
+  - Template design
+  - Engagement tracking
+- **Parameters**: email_content, email_type (marketing/transactional/notification/newsletter), focus (deliverability/content/personalization/design), include_subject
+- **Use Case**: Optimize email campaigns, improve deliverability, prevent spam
+
+### 26. Legal Tools (`ai_multitool/advanced/legal/`)
+
+#### ContractAnalyzer
+- **File**: `contract_analyzer.py`
+- **Purpose**: AI-powered legal contract analysis
+- **Features**:
+  - Contract clauses
+  - Risk identification
+  - Compliance checks
+  - Terms negotiation
+  - Liability assessment
+  - Jurisdiction issues
+  - Standard clauses
+- **Parameters**: contract_text, contract_type, jurisdiction, focus (risks/compliance/terms/liability), include_suggestions
+- **Use Case**: Analyze contracts, identify risks, ensure compliance
+
+### 27. IoT Tools (`ai_multitool/advanced/iot/`)
+
+#### IoTDeviceManager
+- **File**: `device_manager.py`
+- **Purpose**: AI-powered IoT device management
+- **Features**:
+  - Device provisioning
+  - Firmware updates
+  - Security policies
+  - Data collection
+  - Edge computing
+  - Power management
+  - Telemetry
+- **Parameters**: device_type, deployment_scale, connectivity (wifi/cellular/lora/mqtt), focus (security/power/connectivity/telemetry), include_architecture
+- **Use Case**: Manage IoT devices, optimize power consumption, secure firmware updates
+
 ## Tool Statistics
 
 | Category | Previous Count | New Count | Total |
@@ -244,7 +468,21 @@ Added 12 new tool categories with 12 new advanced tools, expanding the total too
 | **Crypto** | 0 | 1 | 1 |
 | **Network** | 0 | 1 | 1 |
 | **Data** | 0 | 1 | 1 |
-| **TOTAL** | 34 | 12 | 46 |
+| **Web** | 0 | 1 | 1 |
+| **SEO** | 0 | 1 | 1 |
+| **Accessibility** | 0 | 1 | 1 |
+| **Backup** | 0 | 1 | 1 |
+| **Analytics** | 0 | 1 | 1 |
+| **Automation** | 0 | 1 | 1 |
+| **Compliance** | 0 | 1 | 1 |
+| **Infrastructure** | 0 | 1 | 1 |
+| **Messaging** | 0 | 1 | 1 |
+| **Storage** | 0 | 1 | 1 |
+| **Search** | 0 | 1 | 1 |
+| **Email** | 0 | 1 | 1 |
+| **Legal** | 0 | 1 | 1 |
+| **IoT** | 0 | 1 | 1 |
+| **TOTAL** | 34 | 26 | 60 |
 
 ## Implementation Details
 
@@ -270,6 +508,20 @@ from ai_multitool.advanced.frontend.component_analyzer import ComponentAnalyzer
 from ai_multitool.advanced.crypto.key_manager import CryptoKeyManager
 from ai_multitool.advanced.network.protocol_analyzer import NetworkProtocolAnalyzer
 from ai_multitool.advanced.data.pipeline_optimizer import DataPipelineOptimizer
+from ai_multitool.advanced.web.scraper import WebScraper
+from ai_multitool.advanced.seo.optimizer import SEOOptimizer
+from ai_multitool.advanced.accessibility.auditor import AccessibilityAuditor
+from ai_multitool.advanced.backup.strategy import BackupStrategy
+from ai_multitool.advanced.analytics.reporter import AnalyticsReporter
+from ai_multitool.advanced.automation.workflow import WorkflowDesigner
+from ai_multitool.advanced.compliance.auditor import ComplianceAuditor
+from ai_multitool.advanced.infrastructure.provisioner import InfrastructureProvisioner
+from ai_multitool.advanced.messaging.queue_analyzer import QueueAnalyzer
+from ai_multitool.advanced.storage.optimizer import StorageOptimizer
+from ai_multitool.advanced.search.analyzer import SearchAnalyzer
+from ai_multitool.advanced.email.analyzer import EmailAnalyzer
+from ai_multitool.advanced.legal.contract_analyzer import ContractAnalyzer
+from ai_multitool.advanced.iot.device_manager import IoTDeviceManager
 
 # Performance profiling
 profiler = PerformanceProfiler(llm_client=client)
@@ -360,12 +612,148 @@ result = await data_optimizer.execute(
     focus="quality",
     include_quality_checks=True
 )
+
+# Web scraping
+scraper = WebScraper(llm_client=client)
+result = await scraper.execute(
+    target_url="https://example.com",
+    data_type="product_listings",
+    focus="selectors",
+    include_code=True
+)
+
+# SEO optimization
+seo_optimizer = SEOOptimizer(llm_client=client)
+result = await seo_optimizer.execute(
+    page_content="<html>...</html>",
+    page_type="product",
+    focus="keywords",
+    include_suggestions=True
+)
+
+# Accessibility auditing
+a11y_auditor = AccessibilityAuditor(llm_client=client)
+result = await a11y_auditor.execute(
+    page_content="<html>...</html>",
+    standard="WCAG",
+    level="AA",
+    focus="contrast",
+    include_fixes=True
+)
+
+# Backup strategy
+backup_strategy = BackupStrategy(llm_client=client)
+result = await backup_strategy.execute(
+    data_description="PostgreSQL database with 1TB data",
+    rpo="1h",
+    rto="4h",
+    focus="cost",
+    include_script=True
+)
+
+# Analytics reporting
+analytics_reporter = AnalyticsReporter(llm_client=client)
+result = await analytics_reporter.execute(
+    metrics_data="sales, users, revenue",
+    dashboard_type="executive",
+    focus="visualization",
+    include_dashboard=True
+)
+
+# Workflow automation
+workflow_designer = WorkflowDesigner(llm_client=client)
+result = await workflow_designer.execute(
+    process_description="User onboarding with email verification",
+    steps=["register", "verify_email", "complete_profile"],
+    tools=["email", "database", "analytics"],
+    focus="error_handling",
+    include_diagram=True
+)
+
+# Compliance auditing
+compliance_auditor = ComplianceAuditor(llm_client=client)
+result = await compliance_auditor.execute(
+    system_description="E-commerce platform with user data",
+    standards=["GDPR", "PCI-DSS"],
+    data_type="user_personal",
+    focus="data_privacy",
+    include_checklist=True
+)
+
+# Infrastructure provisioning
+infra_provisioner = InfrastructureProvisioner(llm_client=client)
+result = await infra_provisioner.execute(
+    service_type="web_application",
+    expected_load="10000 users/day",
+    provider="aws",
+    focus="cost",
+    include_terraform=True
+)
+
+# Queue analysis
+queue_analyzer = QueueAnalyzer(llm_client=client)
+result = await queue_analyzer.execute(
+    queue_type="rabbitmq",
+    message_type="order_events",
+    throughput="1000 msg/min",
+    focus="retry",
+    include_examples=True
+)
+
+# Storage optimization
+storage_optimizer = StorageOptimizer(llm_client=client)
+result = await storage_optimizer.execute(
+    data_type="user_uploads",
+    access_pattern="warm",
+    provider="s3",
+    focus="cost",
+    include_policy=True
+)
+
+# Search analysis
+search_analyzer = SearchAnalyzer(llm_client=client)
+result = await search_analyzer.execute(
+    data_description="Product catalog with 1M items",
+    search_engine="elasticsearch",
+    query_types=["full_text", "filter", "autocomplete"],
+    focus="schema",
+    include_mapping=True
+)
+
+# Email analysis
+email_analyzer = EmailAnalyzer(llm_client=client)
+result = await email_analyzer.execute(
+    email_content="Welcome to our service...",
+    email_type="transactional",
+    focus="deliverability",
+    include_subject=True
+)
+
+# Contract analysis
+contract_analyzer = ContractAnalyzer(llm_client=client)
+result = await contract_analyzer.execute(
+    contract_text="SERVICE AGREEMENT...",
+    contract_type="service",
+    jurisdiction="US",
+    focus="risks",
+    include_suggestions=True
+)
+
+# IoT device management
+iot_manager = IoTDeviceManager(llm_client=client)
+result = await iot_manager.execute(
+    device_type="sensor",
+    deployment_scale="1000 devices",
+    connectivity="mqtt",
+    focus="security",
+    include_architecture=True
+)
 ```
 
 ## Benefits
 
-1. **Expanded Coverage**: New categories cover performance, databases, APIs, cloud, logging, ML, DevOps, monitoring, mobile, frontend, crypto, network, and data engineering
-2. **Comprehensive Toolset**: 46 total tools across 23 categories covering the entire software development lifecycle
+1. **Expanded Coverage**: New categories cover performance, databases, APIs, cloud, logging, ML, DevOps, monitoring, mobile, frontend, crypto, network, data engineering, web, SEO, accessibility, backup, analytics, automation, compliance, infrastructure, messaging, storage, search, email, legal, and IoT
+2. **Comprehensive Toolset**: 60 total tools across 30+ categories covering the entire software development lifecycle
 3. **Consistent Interface**: All tools follow the same pattern for easy integration
 4. **AI-Powered**: Leverages LLM for intelligent analysis and recommendations
 5. **Structured Output**: Standardized ToolResult format with metrics and suggestions
