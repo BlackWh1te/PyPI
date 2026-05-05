@@ -2,9 +2,15 @@
 
 import asyncio
 import typer
+import sys
+import os
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
+
+# Windows compatibility: force color support
+if sys.platform == "win32":
+    os.environ["FORCE_COLOR"] = "1"
 
 from ai_multitool.core.llm_client import ClientFactory
 from ai_multitool.core.models import Message, MessageRole, ChatHistory
@@ -125,61 +131,118 @@ def interactive():
 
 
 @app.command()
-def discover():
+def discover(
+    local_only: bool = typer.Option(False, "--local-only", help="Show only tools that work without API keys"),
+):
     """Discover available tools and capabilities"""
     from ai_multitool.advanced.base import ToolCategory
     
-    console.print(Panel("[bold cyan]Available Tools Discovery[/bold cyan]"))
-    
-    categories = [
-        ("API Testing", "api_testing", 5),
-        ("Code Quality", "code_quality", 5),
-        ("CI/CD", "cicd", 5),
-        ("DevOps Infrastructure", "devops_infra", 5),
-        ("Database & Monitoring", "db_monitoring", 5),
-        ("Advanced Features", "advanced_features", 5),
-        ("Developer Experience", "dev_experience", 5),
-        ("Performance", "performance", 1),
-        ("Database", "database", 1),
-        ("API", "api", 1),
-        ("Cloud", "cloud", 1),
-        ("Logging", "logging", 1),
-        ("ML", "ml", 1),
-        ("DevOps", "devops", 1),
-        ("Monitoring", "monitoring", 1),
-        ("Mobile", "mobile", 1),
-        ("Frontend", "frontend", 1),
-        ("Crypto", "crypto", 1),
-        ("Network", "network", 1),
-        ("Data", "data", 1),
-        ("Web", "web", 1),
-        ("SEO", "seo", 1),
-        ("Accessibility", "accessibility", 1),
-        ("Backup", "backup", 1),
-        ("Analytics", "analytics", 1),
-        ("Automation", "automation", 1),
-        ("Compliance", "compliance", 1),
-        ("Infrastructure", "infrastructure", 1),
-        ("Messaging", "messaging", 1),
-        ("Storage", "storage", 1),
-        ("Search", "search", 1),
-        ("Email", "email", 1),
-        ("Legal", "legal", 1),
-        ("IoT", "iot", 1),
-    ]
-    
-    from rich.table import Table
-    table = Table()
-    table.add_column("Category", style="cyan")
-    table.add_column("Module", style="green")
-    table.add_column("Tools", style="yellow")
-    
-    for name, module, count in categories:
-        table.add_row(name, module, str(count))
-    
-    console.print(table)
-    console.print(f"\n[dim]Total: 95 tools across 35+ categories[/dim]")
-    console.print("[dim]Use 'ai-multitool tools list <cli-tool>' to see tools for specific CLI integration[/dim]")
+    if local_only:
+        console.print(Panel("[bold cyan]Local-Only Tools (No API Keys Required)[/bold cyan]"))
+        console.print("[dim]These 95 developer tools work completely offline:[/dim]\n")
+        
+        local_categories = [
+            ("API Testing", "api_testing", 5, "Test APIs without cloud services"),
+            ("Code Quality", "code_quality", 5, "Lint and format code locally"),
+            ("CI/CD", "cicd", 5, "Generate CI/CD configurations"),
+            ("DevOps Infrastructure", "devops_infra", 5, "Analyze Docker and containers"),
+            ("Database & Monitoring", "db_monitoring", 5, "Monitor databases and logs"),
+            ("Advanced Features", "advanced_features", 5, "Feature flags and A/B testing"),
+            ("Developer Experience", "dev_experience", 5, "Code snippets and templates"),
+            ("Performance", "performance", 1, "Performance profiling"),
+            ("Database", "database", 1, "Database operations"),
+            ("API", "api", 1, "API design tools"),
+            ("Cloud", "cloud", 1, "Cloud configuration"),
+            ("Logging", "logging", 1, "Log management"),
+            ("ML", "ml", 1, "Machine learning utilities"),
+            ("DevOps", "devops", 1, "DevOps automation"),
+            ("Monitoring", "monitoring", 1, "System monitoring"),
+            ("Mobile", "mobile", 1, "Mobile development"),
+            ("Frontend", "frontend", 1, "Frontend tools"),
+            ("Crypto", "crypto", 1, "Cryptography"),
+            ("Network", "network", 1, "Network utilities"),
+            ("Data", "data", 1, "Data processing"),
+            ("Web", "web", 1, "Web development"),
+            ("SEO", "seo", 1, "SEO tools"),
+            ("Accessibility", "accessibility", 1, "Accessibility checking"),
+            ("Backup", "backup", 1, "Backup solutions"),
+            ("Analytics", "analytics", 1, "Analytics tools"),
+            ("Automation", "automation", 1, "Automation scripts"),
+            ("Compliance", "compliance", 1, "Compliance checking"),
+            ("Infrastructure", "infrastructure", 1, "Infrastructure as code"),
+            ("Messaging", "messaging", 1, "Messaging systems"),
+            ("Storage", "storage", 1, "Storage solutions"),
+            ("Search", "search", 1, "Search functionality"),
+            ("Email", "email", 1, "Email tools"),
+            ("Legal", "legal", 1, "Legal compliance"),
+            ("IoT", "iot", 1, "IoT development"),
+        ]
+        
+        from rich.table import Table
+        table = Table()
+        table.add_column("Category", style="cyan")
+        table.add_column("Tools", style="green")
+        table.add_column("Description", style="dim")
+        
+        for name, count, desc in local_categories:
+            table.add_row(name, str(count), desc)
+        
+        console.print(table)
+        console.print(f"\n[bold green]Total: 95 tools - All work offline without API keys![/bold green]")
+        console.print("[dim]Use 'ai-multitool chat' with Ollama for AI-powered analysis (also local)[/dim]")
+    else:
+        console.print(Panel("[bold cyan]Available Tools Discovery[/bold cyan]"))
+        
+        categories = [
+            ("API Testing", "api_testing", 5),
+            ("Code Quality", "code_quality", 5),
+            ("CI/CD", "cicd", 5),
+            ("DevOps Infrastructure", "devops_infra", 5),
+            ("Database & Monitoring", "db_monitoring", 5),
+            ("Advanced Features", "advanced_features", 5),
+            ("Developer Experience", "dev_experience", 5),
+            ("Performance", "performance", 1),
+            ("Database", "database", 1),
+            ("API", "api", 1),
+            ("Cloud", "cloud", 1),
+            ("Logging", "logging", 1),
+            ("ML", "ml", 1),
+            ("DevOps", "devops", 1),
+            ("Monitoring", "monitoring", 1),
+            ("Mobile", "mobile", 1),
+            ("Frontend", "frontend", 1),
+            ("Crypto", "crypto", 1),
+            ("Network", "network", 1),
+            ("Data", "data", 1),
+            ("Web", "web", 1),
+            ("SEO", "seo", 1),
+            ("Accessibility", "accessibility", 1),
+            ("Backup", "backup", 1),
+            ("Analytics", "analytics", 1),
+            ("Automation", "automation", 1),
+            ("Compliance", "compliance", 1),
+            ("Infrastructure", "infrastructure", 1),
+            ("Messaging", "messaging", 1),
+            ("Storage", "storage", 1),
+            ("Search", "search", 1),
+            ("Email", "email", 1),
+            ("Legal", "legal", 1),
+            ("IoT", "iot", 1),
+        ]
+        
+        from rich.table import Table
+        table = Table()
+        table.add_column("Category", style="cyan")
+        table.add_column("Module", style="green")
+        table.add_column("Tools", style="yellow")
+        
+        for name, module, count in categories:
+            table.add_row(name, module, str(count))
+        
+        console.print(table)
+        console.print(f"\n[dim]Total: 95 tools across 35+ categories[/dim]")
+        console.print("[dim]Use 'ai-multitool discover --local-only' to see tools that work without API keys[/dim]")
+        console.print("[dim]Use 'ai-multitool integrations --cli-tool <name>' to see tools for specific CLI integration[/dim]")
 
 
 @app.command()
@@ -297,9 +360,12 @@ def chat(
 
         asyncio.run(run_chat())
     except ImportError as e:
-        console.print("[yellow]Ollama support requires the 'ollama' extra to be installed.[/yellow]")
-        console.print("[dim]Install with: pip install ai-multitool[ollama][/dim]")
-        console.print("[dim]Or install Ollama from: https://ollama.com[/dim]")
+        console.print("[yellow]Ollama library not found.[/yellow]")
+        console.print("[dim]To use local AI models, install the ollama extra:[/dim]")
+        console.print("[cyan]  pip install ai-multitool[ollama][/cyan]")
+        console.print("[dim]Then install Ollama from: https://ollama.com[/dim]")
+        console.print("[dim]And start Ollama: ollama serve[/dim]")
+        console.print("[dim]Pull a model: ollama pull llama2[/dim]")
         raise typer.Exit(1)
 
 
@@ -893,6 +959,110 @@ def clear_stats():
     
     metrics_collector.clear_metrics()
     console.print("[bold green]Metrics cleared[/bold green]")
+
+
+@app.command()
+def doctor():
+    """Diagnose ai-multitool setup and configuration"""
+    console.print(Panel("[bold cyan]AI-Multitool Health Check[/bold cyan]"))
+    console.print()
+    
+    issues = []
+    warnings = []
+    
+    # Check Python version
+    import sys
+    python_version = sys.version_info
+    console.print(f"[bold]Python Version:[/bold] {python_version.major}.{python_version.minor}.{python_version.micro}")
+    if python_version < (3, 10):
+        issues.append("Python 3.10+ required")
+        console.print("  [red]FAIL[/red] - Python 3.10+ required")
+    else:
+        console.print("  [green]OK[/green]")
+    
+    # Check platform
+    console.print(f"\n[bold]Platform:[/bold] {sys.platform}")
+    if sys.platform == "win32":
+        console.print("  [dim]Windows detected - Color support forced[/dim]")
+    
+    # Check optional dependencies
+    console.print("\n[bold]Optional Dependencies:[/bold]")
+    
+    # Check Ollama
+    try:
+        import ollama
+        console.print("  [green]ollama[/green] - Installed")
+        try:
+            client = ollama.Client()
+            models = client.list()
+            if models and 'models' in models and models['models']:
+                console.print(f"    [green]Ollama server running[/green] - {len(models['models'])} model(s) available")
+            else:
+                warnings.append("Ollama server running but no models pulled")
+                console.print("    [yellow]Ollama server running but no models[/yellow] - Run: ollama pull llama2")
+        except Exception as e:
+            issues.append("Ollama server not running")
+            console.print(f"    [red]Ollama server not running[/red] - Run: ollama serve")
+    except ImportError:
+        warnings.append("Ollama not installed - Install with: pip install ai-multitool[ollama]")
+        console.print("  [yellow]ollama[/yellow] - Not installed (pip install ai-multitool[ollama])")
+    
+    # Check AI SDKs
+    try:
+        import anthropic
+        console.print("  [green]anthropic[/green] - Installed")
+    except ImportError:
+        console.print("  [dim]anthropic[/dim] - Not installed (optional)")
+    
+    try:
+        import openai
+        console.print("  [green]openai[/green] - Installed")
+    except ImportError:
+        console.print("  [dim]openai[/dim] - Not installed (optional)")
+    
+    # Check API keys
+    console.print("\n[bold]API Keys:[/bold]")
+    settings = get_settings()
+    
+    anthropic_key = settings.get_anthropic_key()
+    if anthropic_key:
+        console.print("  [green]ANTHROPIC_API_KEY[/green] - Set")
+    else:
+        console.print("  [dim]ANTHROPIC_API_KEY[/dim] - Not set (optional for local-only)")
+    
+    openai_key = settings.get_openai_key()
+    if openai_key:
+        console.print("  [green]OPENAI_API_KEY[/green] - Set")
+    else:
+        console.print("  [dim]OPENAI_API_KEY[/dim] - Not set (optional for local-only)")
+    
+    # Summary
+    console.print("\n" + "="*50)
+    if issues:
+        console.print(f"[bold red]Issues Found: {len(issues)}[/bold red]")
+        for issue in issues:
+            console.print(f"  - {issue}")
+    if warnings:
+        console.print(f"[bold yellow]Warnings: {len(warnings)}[/bold yellow]")
+        for warning in warnings:
+            console.print(f"  - {warning}")
+    
+    if not issues and not warnings:
+        console.print("[bold green]All checks passed![/bold green]")
+        console.print("[dim]You're ready to use ai-multitool[/dim]")
+    elif not issues:
+        console.print("[bold yellow]Setup complete with warnings[/bold yellow]")
+        console.print("[dim]ai-multitool will work, but some features may be limited[/dim]")
+    else:
+        console.print("[bold red]Setup incomplete[/bold red]")
+        console.print("[dim]Fix the issues above for full functionality[/dim]")
+    
+    console.print("\n[dim]For local-only usage:[/dim]")
+    console.print("[cyan]  1. Install: pip install ai-multitool[ollama][/cyan]")
+    console.print("[cyan]  2. Install Ollama: https://ollama.com[/cyan]")
+    console.print("[cyan]  3. Start Ollama: ollama serve[/cyan]")
+    console.print("[cyan]  4. Pull a model: ollama pull llama2[/cyan]")
+    console.print("[cyan]  5. Chat: ai-multitool chat 'Hello'[/cyan]")
 
 
 # Create a sub-app for RAG operations

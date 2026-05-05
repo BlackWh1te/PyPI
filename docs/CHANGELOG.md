@@ -37,6 +37,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated supported CLI tools section to show all 5 tools as fully supported (✅)
 - Updated ai_multitool/advanced/__init__.py with new tool categories and examples
 
+## [0.5.1] - 2025-05-05
+
+### Added
+- **Windows Compatibility**: Fixed console rendering issues
+  - Force color support on Windows with FORCE_COLOR environment variable
+  - Better handling of MINGW terminal compatibility
+- **Health Check Command**: Added `ai-multitool doctor` command
+  - Diagnoses Python version, platform, and dependencies
+  - Checks Ollama server status and available models
+  - Validates API key configuration
+  - Provides actionable setup instructions
+- **Local-Only Discovery**: Added `--local-only` flag to discover command
+  - Shows all 95 tools that work without API keys
+  - Clear descriptions of what each tool category does
+  - Emphasizes privacy-first, offline capability
+- **Local-Only Quick Start Guide**: Comprehensive guide for privacy-first setup
+  - Complete installation instructions for local-only usage
+  - Ollama setup and model management
+  - Common workflows and examples
+  - Troubleshooting guide
+  - Privacy guarantees section
+- **Better Error Messages**: More specific and actionable error messages
+  - Ollama connection errors now include detailed troubleshooting steps
+  - Missing dependencies show exact install commands
+  - API key errors specify which key is needed and how to set it
+
+### Changed
+- **Tool Discovery Without API Keys**: Tool listing now works without authentication
+  - `get_tools()` and `get_tools_schema()` no longer require API keys
+  - Lazy initialization: API keys only needed when executing tools
+  - Allows users to explore available tools before setting up authentication
+- **Dependency Management**: Added `local` extra for convenience
+  - `local` extra: includes ollama for local-only setup
+  - Clear separation between local and cloud dependencies
+- Bumped version to 0.5.1
+
+### Fixed
+- Fixed tool discovery requiring API keys unnecessarily
+- Fixed confusing error messages about missing [ollama] extra
+- Improved error handling for Ollama connection failures
+
 ## [0.5.0] - 2025-05-05
 
 ### Added

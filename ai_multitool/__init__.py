@@ -19,7 +19,7 @@ Example usage:
     tools = adapter.get_tools()
 """
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 # Core exceptions (needed by tools)
 from .core.exceptions import (

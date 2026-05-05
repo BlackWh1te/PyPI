@@ -546,13 +546,22 @@ class OllamaClient(BaseLLMClient):
             else:
                 raise ConfigurationError(
                     "No models found in Ollama",
-                    suggestion="Pull a model with: ollama pull <model-name>"
+                    suggestion="Pull a model with: ollama pull llama2\nOr install with: pip install ai-multitool[ollama]"
                 )
         except Exception as e:
-            raise ConfigurationError(
-                f"Failed to connect to Ollama at {self.host}",
-                suggestion="Make sure Ollama is running: ollama serve"
-            )
+            error_msg = str(e).lower()
+            if "connect" in error_msg or "connection" in error_msg:
+                raise ConfigurationError(
+                    f"Cannot connect to Ollama at {self.host}",
+                    suggestion="1. Make sure Ollama is running: ollama serve\n"
+                               "2. Install Ollama from: https://ollama.com\n"
+                               "3. Install ollama extra: pip install ai-multitool[ollama]"
+                )
+            else:
+                raise ConfigurationError(
+                    f"Ollama error: {e}",
+                    suggestion="Check Ollama installation and try: ollama serve"
+                )
 
     async def chat(
         self,

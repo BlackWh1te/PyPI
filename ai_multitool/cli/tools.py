@@ -43,12 +43,12 @@ class ToolServer:
         """
         self.cli_tool = cli_tool
         self.adapter = None
-        self._initialize_adapter()
+        self._adapter_factory = None
+        self._default_provider = None
+        self._initialize_adapter_factory()
 
-    def _initialize_adapter(self):
-        """Initialize the appropriate adapter for the CLI tool."""
-        settings = get_settings()
-
+    def _initialize_adapter_factory(self):
+        """Initialize the adapter factory (without API key)."""
         adapter_map = {
             "claude-code": (create_claude_code_adapter, Provider.ANTHROPIC),
             "devin": (create_devin_adapter, Provider.ANTHROPIC),
@@ -60,41 +60,65 @@ class ToolServer:
         if self.cli_tool not in adapter_map:
             raise ValueError(f"Unsupported CLI tool: {self.cli_tool}")
 
-        factory, default_provider = adapter_map[self.cli_tool]
+        self._adapter_factory, self._default_provider = adapter_map[self.cli_tool]
 
-        # Get API key based on provider
-        api_key = settings.get_anthropic_key() if default_provider == Provider.ANTHROPIC else settings.get_openai_key()
+    def _ensure_adapter(self):
+        """Lazy-initialize adapter with API key when needed."""
+        if self.adapter is None:
+            settings = get_settings()
+            
+            # Get API key based on provider
+            api_key = settings.get_anthropic_key() if self._default_provider == Provider.ANTHROPIC else settings.get_openai_key()
 
-        if not api_key:
-            raise ValueError(f"API key not found for {default_provider}")
+            if not api_key:
+                raise ValueError(
+                    f"API key not found for {self._default_provider}. "
+                    f"Set {self._default_provider.value.upper()}_API_KEY environment variable."
+                )
 
-        # Create adapter
-        self.adapter = factory(
-            api_key=api_key,
-            provider=str(default_provider),
-            model=settings.default_model,
-            enable_code_analysis=True,
-            enable_git_integration=True,
-        )
+            # Create adapter
+            self.adapter = self._adapter_factory(
+                api_key=api_key,
+                provider=str(self._default_provider),
+                model=settings.default_model,
+                enable_code_analysis=True,
+                enable_git_integration=True,
+            )
 
     def get_tools(self) -> List[Dict[str, Any]]:
-        """Get tool definitions for the CLI tool.
+        """Get tool definitions for the CLI tool (no API key required).
 
         Returns:
             List of tool definitions in the appropriate format
         """
-        return self.adapter.get_tool_definitions()
+        # Create a temporary adapter without API key just for tool definitions
+        temp_adapter = self._adapter_factory(
+            api_key="dummy",  # API key not needed for tool definitions
+            provider=str(self._default_provider),
+            model="dummy",
+            enable_code_analysis=False,
+            enable_git_integration=False,
+        )
+        return temp_adapter.get_tool_definitions()
 
     def get_tools_schema(self) -> Dict[str, Any]:
-        """Get tool definitions as a schema.
+        """Get tool definitions as a schema (no API key required).
 
         Returns:
             Dictionary mapping tool names to their definitions
         """
-        return self.adapter.get_tool_definitions_schema()
+        # Create a temporary adapter without API key just for tool definitions
+        temp_adapter = self._adapter_factory(
+            api_key="dummy",  # API key not needed for tool definitions
+            provider=str(self._default_provider),
+            model="dummy",
+            enable_code_analysis=False,
+            enable_git_integration=False,
+        )
+        return temp_adapter.get_tool_definitions_schema()
 
     def execute_tool(self, tool_name: str, **kwargs) -> Any:
-        """Execute a tool.
+        """Execute a tool (requires API key).
 
         Args:
             tool_name: Name of the tool to execute
@@ -103,6 +127,7 @@ class ToolServer:
         Returns:
             Tool execution result
         """
+        self._ensure_adapter()  # Initialize adapter with API key when needed
         return self.adapter.execute_tool(tool_name, **kwargs)
 
     async def chat(self, message: str, system_prompt: Optional[str] = None) -> str:

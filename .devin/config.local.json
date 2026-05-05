@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Exec(mkdir)",
-      "Exec(python)"
+      "Exec(python)",
+      "Exec(git add)"
     ]
   }
 }
