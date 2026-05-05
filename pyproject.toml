@@ -73,6 +73,7 @@ dev = [
 
 [project.scripts]
 ai-multitool = "ai_multitool.cli.main:app"
+ai-multitool-tools = "ai_multitool.cli.tools:app"
 
 [tool.setuptools.packages.find]
 where = ["."]

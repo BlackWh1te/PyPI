@@ -171,6 +171,65 @@ config = PluginConfig(
 adapter = MyCLIAdapter(config)
 ```
 
+## CLI Tool Server
+
+ai-multitool includes a CLI tool server that provides commands for terminal AI tools to access ai-multitool capabilities.
+
+### Installation
+
+```bash
+pip install ai-multitool
+```
+
+### Available Commands
+
+#### List Available Tools
+
+List all available tools for a specific CLI tool:
+
+```bash
+ai-multitool-tools list claude-code
+ai-multitool-tools list devin
+ai-multitool-tools list opencode
+ai-multitool-tools list gemini
+ai-multitool-tools list qwen
+```
+
+#### Export Tools Schema
+
+Export tool definitions as JSON for integration:
+
+```bash
+ai-multitool-tools schema claude-code --output tools.json
+ai-multitool-tools schema devin --output tools.json
+```
+
+#### Execute a Tool
+
+Execute a specific tool:
+
+```bash
+ai-multitool-tools execute claude-code parse_code --arg file_path=main.py
+ai-multitool-tools execute devin analyze_git --arg repo_path=/path/to/repo
+```
+
+#### Chat with AI
+
+Chat using the CLI tool's adapter:
+
+```bash
+ai-multitool-tools chat claude-code "Analyze this code"
+ai-multitool-tools chat gemini "What can you help me with?"
+```
+
+### Supported CLI Tools
+
+- ✅ Claude Code
+- ✅ Devin
+- ✅ OpenCode
+- ✅ Gemini CLI
+- ✅ Qwen CLI
+
 ## Library API
 
 ### Core LLM

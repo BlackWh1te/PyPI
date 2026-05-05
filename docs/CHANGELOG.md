@@ -8,11 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **OpenCode Adapter**: Full support for OpenCode CLI integration with `OpenCodeAdapter` and `create_opencode_adapter()`
-- **Gemini CLI Adapter**: Full support for Gemini CLI integration with `GeminiAdapter` and `create_gemini_adapter()`
-- **Qwen CLI Adapter**: Full support for Qwen CLI integration with `QwenAdapter` and `create_qwen_adapter()`
-- All new adapters support both Anthropic and OpenAI providers
-- Updated README.md with integration examples for all 5 supported CLI tools
+- **CLI Tool Server**: New `ai-multitool-tools` command for terminal AI integration
+  - `list` command: List available tools for specific CLI tools
+  - `schema` command: Export tool definitions as JSON
+  - `execute` command: Execute specific tools with arguments
+  - `chat` command: Chat with AI using CLI tool's adapter
+- Support for all 5 CLI tools: Claude Code, Devin, OpenCode, Gemini CLI, Qwen CLI
+- ToolServer class for programmatic tool server access
+- New CLI entry point: `ai-multitool-tools` in pyproject.toml
+- CLI Tool Server documentation in README.md with usage examples
 
 ### Changed
 - **Documentation Reorganization**: Moved all .md files (except README.md) to docs/ directory for better project organization
@@ -21,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated release.py to use docs/CHANGELOG.md instead of root CHANGELOG.md
 - Added readme-content-type to pyproject.toml for proper PyPI rendering
 - Updated supported CLI tools section to show all 5 tools as fully supported (✅)
+
+### Added (Previous)
+- **OpenCode Adapter**: Full support for OpenCode CLI integration with `OpenCodeAdapter` and `create_opencode_adapter()`
+- **Gemini CLI Adapter**: Full support for Gemini CLI integration with `GeminiAdapter` and `create_gemini_adapter()`
+- **Qwen CLI Adapter**: Full support for Qwen CLI integration with `QwenAdapter` and `create_qwen_adapter()`
+- All new adapters support both Anthropic and OpenAI providers
+- Updated README.md with integration examples for all 5 supported CLI tools
 
 ## [0.3.0] - 2025-05-05
 

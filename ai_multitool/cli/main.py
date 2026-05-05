@@ -1040,6 +1040,11 @@ def rag_stats(
 # Add RAG sub-app to main app
 app.add_typer(rag_app, name="rag")
 
+# Add Tools sub-app to main app
+from .tools import create_cli_app
+tools_app = create_cli_app()
+app.add_typer(tools_app, name="tools")
+
 
 if __name__ == "__main__":
     app()
