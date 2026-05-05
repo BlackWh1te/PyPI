@@ -5,6 +5,7 @@ from typing import List, AsyncIterator, Optional
 import asyncio
 import time
 import hashlib
+from collections import OrderedDict
 
 from .models import Message, LLMResponse, ModelInfo
 from .exceptions import (
@@ -17,6 +18,10 @@ from .exceptions import (
     NetworkError,
     ConfigurationError
 )
+from ..utils.logging_config import get_logger
+from ..utils.validation import is_empty_string
+
+logger = get_logger(__name__)
 
 
 class RateLimiter:
@@ -35,10 +40,8 @@ class RateLimiter:
             current = time.time()
             time_passed = current - self.last_check
             self.last_check = current
-            self.allowance += time_passed * (self.rate / self.per)
-
-            if self.allowance > self.rate:
-                self.allowance = self.rate
+            # Use min() to prevent overflow if time_passed is very large
+            self.allowance = min(self.rate, self.allowance + time_passed * (self.rate / self.per))
 
             if self.allowance < 1:
                 sleep_time = (1 - self.allowance) * (self.per / self.rate)
@@ -52,7 +55,8 @@ class ResponseCache:
     """Simple in-memory cache for LLM responses"""
 
     def __init__(self, max_size: int = 1000, ttl: int = 3600):
-        self.cache = {}
+        # Use OrderedDict for efficient cache cleanup (O(1) instead of O(n))
+        self.cache = OrderedDict()
         self.max_size = max_size
         self.ttl = ttl
         self._lock = asyncio.Lock()
@@ -61,10 +65,17 @@ class ResponseCache:
         """Make cache key from data"""
         return hashlib.sha256(data.encode()).hexdigest()
 
+    def _make_cache_key(self, messages: List[Message], temperature: float, max_tokens: int) -> str:
+        """Make cache key from messages and parameters efficiently."""
+        # Hash the message contents instead of building large string
+        content_hash = hashlib.sha256(
+            str([m.content for m in messages]).encode()
+        ).hexdigest()
+        return f"{content_hash}_{temperature}_{max_tokens}"
+
     async def get(self, messages: List[Message], temperature: float, max_tokens: int) -> Optional[LLMResponse]:
         """Get cached response if available"""
-        key_data = f"{[m.content for m in messages]}_{temperature}_{max_tokens}"
-        key = self._make_key(key_data)
+        key = self._make_cache_key(messages, temperature, max_tokens)
 
         async with self._lock:
             if key in self.cache:
@@ -78,14 +89,12 @@ class ResponseCache:
 
     async def set(self, messages: List[Message], response: LLMResponse, temperature: float, max_tokens: int):
         """Cache response"""
-        key_data = f"{[m.content for m in messages]}_{temperature}_{max_tokens}"
-        key = self._make_key(key_data)
+        key = self._make_cache_key(messages, temperature, max_tokens)
 
         async with self._lock:
             if len(self.cache) >= self.max_size:
-                # Remove oldest entry
-                oldest = min(self.cache.items(), key=lambda x: x[1]["timestamp"])
-                del self.cache[oldest[0]]
+                # Remove oldest entry efficiently (O(1) with OrderedDict)
+                self.cache.popitem(last=False)
 
             self.cache[key] = {
                 "value": response,
@@ -135,7 +144,7 @@ class AnthropicClient(BaseLLMClient):
     """Anthropic Claude client"""
 
     def __init__(self, api_key: str, model: str = "claude-3-sonnet-20240229", timeout: int = 120, enable_cache: bool = True):
-        if not api_key or not api_key.strip():
+        if is_empty_string(api_key):
             raise ConfigurationError("API key is required for Anthropic", suggestion="Set ANTHROPIC_API_KEY in .env or use 'ai-multitool keys set anthropic'")
         
         super().__init__(api_key, model, timeout, enable_cache)
@@ -167,10 +176,13 @@ class AnthropicClient(BaseLLMClient):
         if not messages:
             raise ConfigurationError("Messages list cannot be empty", suggestion="Provide at least one message")
         
+        logger.debug(f"Chat request: model={self.model}, messages={len(messages)}, temperature={temperature}")
+        
         # Check cache first
         if self._cache:
             cached = await self._cache.get(messages, temperature, max_tokens)
             if cached:
+                logger.debug("Cache hit - returning cached response")
                 return cached
 
         # Rate limiting
@@ -210,6 +222,8 @@ class AnthropicClient(BaseLLMClient):
                     finish_reason=response.stop_reason,
                     latency_ms=latency_ms
                 )
+
+                logger.info(f"Chat success: tokens={result.tokens_used}, latency={latency_ms:.2f}ms")
 
                 # Cache result
                 if self._cache:
@@ -320,7 +334,7 @@ class OpenAIClient(BaseLLMClient):
     """OpenAI GPT client"""
 
     def __init__(self, api_key: str, model: str = "gpt-4-turbo-preview", timeout: int = 120, enable_cache: bool = True):
-        if not api_key or not api_key.strip():
+        if is_empty_string(api_key):
             raise ConfigurationError("API key is required for OpenAI", suggestion="Set OPENAI_API_KEY in .env or use 'ai-multitool keys set openai'")
         
         super().__init__(api_key, model, timeout, enable_cache)
@@ -509,7 +523,7 @@ class ClientFactory:
             "openai": OpenAIClient,
         }
 
-        if not provider or not provider.strip():
+        if is_empty_string(provider):
             raise ConfigurationError(
                 "Provider is required",
                 suggestion="Use 'anthropic' or 'openai'"

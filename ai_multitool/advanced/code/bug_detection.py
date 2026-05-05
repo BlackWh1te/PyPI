@@ -26,6 +26,13 @@ class AdvancedBugDetection(AdvancedTool):
         self.code_parser = CodeParser()
     
     def get_tool_definition(self) -> Dict[str, Any]:
+        """Get the tool definition for bug detection.
+        
+        Returns:
+            Tool definition dictionary with name, description, and parameters schema.
+            The definition follows the standard tool registration format for
+            integration with AI systems and CLI tools.
+        """
         return {
             "name": "detect_bugs",
             "description": "AI-powered bug detection with fix suggestions",

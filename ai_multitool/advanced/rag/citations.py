@@ -16,8 +16,15 @@ class AdvancedCitations(AdvancedTool):
     - Attribution metadata
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for citations.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "generate_citations",
             "description": "Generate citations for retrieved content",
             "parameters": {

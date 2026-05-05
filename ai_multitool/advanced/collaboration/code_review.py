@@ -17,8 +17,15 @@ class AdvancedCodeReview(AdvancedTool):
     - Performance review
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for code review.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "code_review",
             "description": "AI-assisted code review",
             "parameters": {

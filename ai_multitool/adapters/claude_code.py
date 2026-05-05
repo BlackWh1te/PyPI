@@ -5,6 +5,9 @@ from ..adapters.base import BaseAdapter
 from ..adapters.utils import ToolConverter
 from ..plugins import PluginConfig, Provider
 from ..core.llm_client import AnthropicClient, OpenAIClient
+from ..utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class ClaudeCodeAdapter(BaseAdapter):
@@ -125,16 +128,16 @@ if __name__ == "__main__":
 
         # Get available tools
         tools = adapter.get_tool_definitions()
-        print(f"Available tools: {len(tools)}")
+        logger.info(f"Available tools: {len(tools)}")
         for tool in tools:
-            print(f"  - {tool['name']}: {tool['description']}")
+            logger.debug(f"  - {tool['name']}: {tool['description']}")
 
         # Execute a tool
         result = adapter.execute_tool("parse_code", file_path="example.py")
-        print(f"Parse result: {result}")
+        logger.info(f"Parse result: {result}")
 
         # Chat with AI
         response = await adapter.chat("What can you help me with?")
-        print(f"AI response: {response}")
+        logger.info(f"AI response: {response}")
 
     asyncio.run(example())

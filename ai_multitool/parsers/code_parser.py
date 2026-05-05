@@ -11,6 +11,10 @@ from ai_multitool.core.exceptions import (
     FileOperationError,
     ValidationError,
 )
+from ai_multitool.utils.logging_config import get_logger
+from ai_multitool.utils.validation import is_empty_string
+
+logger = get_logger(__name__)
 
 try:
     import tree_sitter
@@ -69,24 +73,11 @@ class CodeParser:
         
         try:
             self.parser = Parser()
-            # Try to load languages from common locations
-            self._load_languages()
+            # Language loading not yet implemented
+            # TODO: Implement _load_languages to load tree-sitter language grammars
         except Exception as e:
-            print(f"Warning: Failed to initialize tree-sitter parser: {e}")
-    
-    def _load_languages(self):
-        """Load tree-sitter language grammars."""
-        # Common locations for tree-sitter language libraries
-        search_paths = [
-            os.path.expanduser('~/.local/share/tree-sitter/parsers'),
-            '/usr/local/lib/tree-sitter',
-            os.path.join(os.path.dirname(__file__), '..', '..', 'tree-sitter-languages'),
-        ]
-        
-        for lang_name, file_ext in self.LANGUAGE_MAP.items():
-            # For now, we'll use a simpler approach with tree-sitter-languages package
-            # if available
-            pass
+            logger.warning(f"Failed to initialize tree-sitter parser: {e}")
+            self.parser = None
     
     def detect_language(self, file_path: str) -> Optional[str]:
         """Detect programming language from file extension."""
@@ -95,7 +86,7 @@ class CodeParser:
     
     def parse_file(self, file_path: str) -> Optional[CodeStructure]:
         """Parse a code file and extract its structure."""
-        if not file_path or not file_path.strip():
+        if is_empty_string(file_path):
             raise ValidationError("File path cannot be empty", field="file_path")
         
         path = Path(file_path)
@@ -148,7 +139,7 @@ class CodeParser:
             content = Path(file_path).read_text(encoding='utf-8', errors='ignore')
             return self._parse_with_regex(content, language, file_path)
         except Exception as e:
-            print(f"Error parsing {file_path}: {e}")
+            logger.error(f"Error parsing {file_path}: {e}")
             return None
     
     def _parse_with_regex(self, content: str, language: str, file_path: str) -> CodeStructure:
@@ -239,7 +230,7 @@ class CodeParser:
     
     def parse_directory(self, directory: str, max_files: int = 50) -> List[CodeStructure]:
         """Parse all code files in a directory."""
-        if not directory or not directory.strip():
+        if is_empty_string(directory):
             raise ValidationError("Directory path cannot be empty", field="directory")
         
         if max_files < 1 or max_files > 500:

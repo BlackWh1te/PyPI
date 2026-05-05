@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from ai_multitool.rag.embeddings import EmbeddingModel
 from ai_multitool.rag.vector_store import VectorStore, SearchResult
 from ai_multitool.core.exceptions import ValidationError
+from ai_multitool.utils.validation import is_empty_string
 
 
 @dataclass
@@ -45,7 +46,7 @@ class SimilarityRetriever(Retriever):
     
     def retrieve(self, query: str, top_k: int = 5) -> RetrievalResult:
         """Retrieve relevant chunks using similarity search."""
-        if not query or not query.strip():
+        if is_empty_string(query):
             raise ValidationError("Query cannot be empty", field="query")
         
         if top_k <= 0:

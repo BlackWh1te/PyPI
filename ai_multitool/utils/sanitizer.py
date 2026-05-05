@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
 from ai_multitool.core.exceptions import SanitizationError, ValidationError
+from ai_multitool.utils.validation import is_empty_string
 
 
 @dataclass
@@ -188,7 +189,7 @@ class ContentSanitizer:
     
     def check_file_safety(self, file_path: str) -> Tuple[bool, List[str]]:
         """Check if a file is safe to analyze."""
-        if not file_path or not file_path.strip():
+        if is_empty_string(file_path):
             raise ValidationError("File path cannot be empty", field="file_path")
         
         warnings = []

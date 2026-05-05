@@ -1,7 +1,7 @@
 """Tool definitions and registry for plugin integration."""
 
 from typing import Dict, Any, Callable, Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
 
@@ -24,8 +24,7 @@ class ToolDefinition(BaseModel):
     requires_auth: bool = Field(default=False, description="Whether tool requires authentication")
     async_handler: bool = Field(default=False, description="Whether handler is async")
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ToolRegistry:

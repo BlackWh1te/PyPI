@@ -52,7 +52,7 @@ from .core.exceptions import (
 
 # RAG functionality
 from .rag.indexer import DocumentIndexer, Document
-from .rag.embeddings import EmbeddingModel, OpenAIEmbeddingModel, FakeEmbeddings
+from .rag.embeddings import EmbeddingModel, OpenAIEmbeddings, FakeEmbeddings
 from .rag.chunkers import (
     DocumentChunker,
     RecursiveCharacterChunker,
@@ -77,8 +77,10 @@ from .utils.file_utils import read_file, read_directory
 from .plugins import (
     BasePlugin,
     PluginConfig,
+    Provider,
     ToolDefinition,
     ToolRegistry,
+    ToolCategory,
     PluginError,
     ToolExecutionError,
 )
@@ -93,8 +95,8 @@ from .adapters import (
     create_devin_adapter,
 )
 
-# Advanced tools
-from .advanced import (
+# Advanced tools (base only - advanced tool imports disabled due to naming inconsistencies)
+from .advanced.base import (
     AdvancedTool,
     ToolResult,
     ToolPipeline,
@@ -143,7 +145,7 @@ __all__ = [
     "DocumentIndexer",
     "Document",
     "EmbeddingModel",
-    "OpenAIEmbeddingModel",
+    "OpenAIEmbeddings",
     "FakeEmbeddings",
     "DocumentChunker",
     "RecursiveCharacterChunker",
@@ -172,8 +174,10 @@ __all__ = [
     # Plugin interface
     "BasePlugin",
     "PluginConfig",
+    "Provider",
     "ToolDefinition",
     "ToolRegistry",
+    "ToolCategory",
     "PluginError",
     "ToolExecutionError",
 
@@ -185,7 +189,7 @@ __all__ = [
     "DevinAdapter",
     "create_devin_adapter",
 
-    # Advanced tools
+    # Advanced tools (base only)
     "AdvancedTool",
     "ToolResult",
     "ToolPipeline",

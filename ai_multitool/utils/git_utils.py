@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
 from ai_multitool.core.exceptions import GitError, ValidationError
+from ai_multitool.utils.validation import is_empty_string
 
 try:
     import git
@@ -148,7 +149,7 @@ class GitHelper:
         if not self.repo:
             return []
         
-        if not file_path or not file_path.strip():
+        if is_empty_string(file_path):
             raise ValidationError("File path cannot be empty", field="file_path")
         
         if limit < 1 or limit > 100:

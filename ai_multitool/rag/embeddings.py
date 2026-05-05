@@ -5,6 +5,7 @@ from typing import List, Optional
 import os
 
 from ai_multitool.core.exceptions import APIError, APIKeyError, ValidationError
+from ai_multitool.utils.validation import is_empty_string
 
 
 class EmbeddingModel(ABC):
@@ -59,7 +60,7 @@ class OpenAIEmbeddings(EmbeddingModel):
     
     def embed(self, text: str) -> List[float]:
         """Generate embedding for a single text."""
-        if not text or not text.strip():
+        if is_empty_string(text):
             raise ValidationError("Text cannot be empty", field="text")
         
         try:

@@ -64,8 +64,8 @@ def update_version(new_version: str):
 
 
 def update_changelog(version: str, changes: str):
-    """Update CHANGELOG.md with new version"""
-    changelog_file = Path("CHANGELOG.md")
+    """Update docs/CHANGELOG.md with new version"""
+    changelog_file = Path("docs/CHANGELOG.md")
 
     if changelog_file.exists():
         content = changelog_file.read_text()
@@ -77,7 +77,7 @@ def update_changelog(version: str, changes: str):
     content = content.replace("## [Unreleased]", f"## [Unreleased]\n{new_entry}")
 
     changelog_file.write_text(content)
-    print(f"✅ Updated CHANGELOG.md for version {version}")
+    print(f"✅ Updated docs/CHANGELOG.md for version {version}")
 
 
 def get_current_date() -> str:

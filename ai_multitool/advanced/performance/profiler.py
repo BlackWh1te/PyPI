@@ -56,8 +56,20 @@ class PerformanceProfiler(AdvancedTool):
             else:
                 code_content = code or ""
             
+            # Truncate input if too large
+            code_content = self._truncate_input(code_content, content_type="code")
+            
             # Build profiling prompt
             prompt = self._build_profiling_prompt(code_content, language, focus, include_optimizations)
+            
+            # Optimize prompt to reduce tokens
+            prompt = self._optimize_prompt(prompt)
+            
+            # Check cache first
+            cache_key = self._get_cache_key(code=code_content, language=language, focus=focus)
+            cached_result = await self._get_cached(cache_key)
+            if cached_result is not None:
+                return cached_result
             
             # Get AI analysis
             response = await self.llm_client.chat([
@@ -69,7 +81,7 @@ class PerformanceProfiler(AdvancedTool):
             
             execution_time = (time.time() - start_time) * 1000
             
-            return ToolResult(
+            result = ToolResult(
                 success=True,
                 status=ToolStatus.SUCCESS,
                 data={
@@ -89,6 +101,11 @@ class PerformanceProfiler(AdvancedTool):
                 tokens_used=response.tokens_used
             )
             
+            # Cache the result
+            await self._set_cached(cache_key, result)
+            
+            return result
+            
         except Exception as e:
             execution_time = (time.time() - start_time) * 1000
             return ToolResult(
@@ -99,33 +116,15 @@ class PerformanceProfiler(AdvancedTool):
             )
     
     def _build_profiling_prompt(self, code: str, language: str, focus: str, include_optimizations: bool) -> str:
-        opt_instruction = "Provide optimization suggestions for each issue." if include_optimizations else ""
+        opt_instruction = "Include fixes." if include_optimizations else ""
         
-        return f"""Analyze this {language or 'code'} for performance issues:
-
+        return f"""Analyze {language or 'code'} perf (focus: {focus}):
 ```{language or ''}
 {code}
 ```
-
-Focus area: {focus}
 {opt_instruction}
-
-Provide response in JSON format:
-{{
-    "issues": [
-        {{
-            "type": "issue type (algorithmic_complexity, memory_leak, io_bottleneck, etc.)",
-            "severity": "critical|high|medium|low",
-            "location": "line numbers or function names",
-            "description": "What the performance issue is",
-            "impact": "Performance impact (e.g., '2-5x slower')",
-            "optimization": "How to optimize (if include_optimizations)",
-            "code_example": "Example of optimized code"
-        }}
-    ],
-    "summary": "Overall performance assessment",
-    "confidence": 0.0-1.0
-}}"""
+JSON:
+{{"issues":[{{"type","severity","location","desc","impact","fix","code"}}],"summary","confidence"}}"""
     
     def _parse_performance_issues(self, response: str) -> List[Dict[str, Any]]:
         import json

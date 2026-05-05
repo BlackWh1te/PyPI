@@ -17,8 +17,15 @@ class AdvancedArchitecture(AdvancedTool):
     - Coupling and cohesion
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for architecture.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "analyze_architecture",
             "description": "Architecture analysis and visualization",
             "parameters": {
@@ -52,7 +59,8 @@ class AdvancedArchitecture(AdvancedTool):
                         "classes": len(structure.classes),
                         "imports": structure.imports
                     })
-                except:
+                except (ValueError, KeyError, AttributeError):
+                    # Skip files that can't be parsed
                     pass
             
             prompt = f"""Analyze architecture of this codebase ({analysis_depth} depth):

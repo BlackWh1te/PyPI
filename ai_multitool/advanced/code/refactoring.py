@@ -24,7 +24,13 @@ class AdvancedCodeRefactoring(AdvancedTool):
         self.code_parser = CodeParser()
     
     def get_tool_definition(self) -> Dict[str, Any]:
-        """Get tool definition."""
+        """Get the tool definition for code refactoring.
+        
+        Returns:
+            Tool definition dictionary with name, description, and parameters schema.
+            The definition follows the standard tool registration format for
+            integration with AI systems and CLI tools.
+        """
         return {
             "name": "refactor_code",
             "description": "AI-powered code refactoring with suggestions for improvements",

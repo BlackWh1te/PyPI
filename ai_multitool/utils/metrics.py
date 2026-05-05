@@ -9,6 +9,8 @@ from dataclasses import dataclass, asdict
 from collections import defaultdict
 
 from ai_multitool.core.exceptions import MetricsError, ValidationError
+from ai_multitool.constants import DEFAULT_MAX_METRICS
+from ai_multitool.utils.validation import is_empty_string
 
 
 @dataclass
@@ -23,6 +25,17 @@ class APICallMetrics:
     cached: bool
     success: bool
     error_message: Optional[str] = None
+
+    def __str__(self) -> str:
+        """String representation."""
+        status = "SUCCESS" if self.success else "FAILED"
+        return f"APICallMetrics({self.provider}/{self.model}, {self.command}, {status}, {self.tokens_used} tokens, {self.latency_ms:.2f}ms)"
+
+    def __repr__(self) -> str:
+        """Detailed representation."""
+        return (f"APICallMetrics(timestamp={self.timestamp}, provider={self.provider}, "
+                f"model={self.model}, command={self.command}, tokens_used={self.tokens_used}, "
+                f"latency_ms={self.latency_ms}, cached={self.cached}, success={self.success})")
 
 
 @dataclass
@@ -40,12 +53,33 @@ class UsageStats:
     by_model: Dict[str, int]
     by_command: Dict[str, int]
 
+    def __str__(self) -> str:
+        """String representation."""
+        success_rate = (self.successful_calls / self.total_calls * 100) if self.total_calls > 0 else 0
+        return (f"UsageStats(calls={self.total_calls}, success_rate={success_rate:.1f}%, "
+                f"tokens={self.total_tokens}, avg_latency={self.avg_latency_ms:.2f}ms)")
+
+    def __repr__(self) -> str:
+        """Detailed representation."""
+        return (f"UsageStats(total_calls={self.total_calls}, successful_calls={self.successful_calls}, "
+                f"failed_calls={self.failed_calls}, total_tokens={self.total_tokens}, "
+                f"avg_latency_ms={self.avg_latency_ms:.2f}, cache_hits={self.cache_hits}, "
+                f"cache_misses={self.cache_misses})")
+
 
 class MetricsCollector:
     """Collect and track usage metrics."""
     
-    def __init__(self, metrics_file: str = None):
-        """Initialize the metrics collector."""
+    def __init__(self, metrics_file: str = None, max_metrics: int = None):
+        """Initialize the metrics collector.
+        
+        Args:
+            metrics_file: Path to metrics file
+            max_metrics: Maximum number of metrics to keep (default: from constants)
+        """
+        if max_metrics is None:
+            max_metrics = DEFAULT_MAX_METRICS
+        
         if metrics_file is None:
             # Default to ~/.ai-multitool/metrics.json
             home_dir = Path.home()
@@ -54,6 +88,7 @@ class MetricsCollector:
             metrics_file = metrics_dir / "metrics.json"
         
         self.metrics_file = Path(metrics_file)
+        self.max_metrics = max_metrics
         self.metrics: List[APICallMetrics] = []
         self._load_metrics()
     
@@ -112,13 +147,13 @@ class MetricsCollector:
         error_message: Optional[str] = None
     ):
         """Record an API call."""
-        if not provider or not provider.strip():
+        if is_empty_string(provider):
             raise ValidationError("Provider cannot be empty", field="provider")
         
-        if not model or not model.strip():
+        if is_empty_string(model):
             raise ValidationError("Model cannot be empty", field="model")
         
-        if not command or not command.strip():
+        if is_empty_string(command):
             raise ValidationError("Command cannot be empty", field="command")
         
         if tokens_used < 0:
@@ -140,6 +175,11 @@ class MetricsCollector:
                 error_message=error_message
             )
             self.metrics.append(metric)
+            
+            # Enforce max limit to prevent unbounded memory growth
+            if len(self.metrics) > self.max_metrics:
+                self.metrics = self.metrics[-self.max_metrics:]
+            
             self._save_metrics()
         except (MetricsError, ValidationError):
             raise
@@ -226,7 +266,7 @@ class MetricsCollector:
     
     def export_metrics(self, output_file: str):
         """Export metrics to a file."""
-        if not output_file or not output_file.strip():
+        if is_empty_string(output_file):
             raise ValidationError("Output file path cannot be empty", field="output_file")
         
         output_path = Path(output_file)

@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Optional
 from ..base import AdvancedTool, ToolResult, ToolStatus
 from ...core.models import Message, MessageRole
 from ...rag.vector_store import InMemoryVectorStore
-from ...rag.embeddings import OpenAIEmbeddingModel
+from ...rag.embeddings import OpenAIEmbeddings
 
 
 class AdvancedHybridSearch(AdvancedTool):
@@ -17,8 +17,15 @@ class AdvancedHybridSearch(AdvancedTool):
     - Re-ranking for best results
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for hybrid search.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "hybrid_search",
             "description": "Hybrid semantic + keyword search",
             "parameters": {

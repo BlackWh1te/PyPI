@@ -16,8 +16,15 @@ class AdvancedConflictResolver(AdvancedTool):
     - Supporting automatic resolution strategies
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for conflict resolver.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "resolve_conflicts",
             "description": "AI-assisted merge conflict resolution",
             "parameters": {

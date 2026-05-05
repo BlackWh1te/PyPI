@@ -16,8 +16,15 @@ class AdvancedReranking(AdvancedTool):
     - Add diversity to results
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for reranking.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "rerank_results",
             "description": "Re-rank search results for better accuracy",
             "parameters": {

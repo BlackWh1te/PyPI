@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from enum import Enum
 
 from ..core.llm_client import BaseLLMClient
@@ -10,6 +10,7 @@ from ..core.models import Message, MessageRole
 from ..rag.indexer import DocumentIndexer
 from ..rag.embeddings import EmbeddingModel
 from ..rag.vector_store import VectorStore
+from ..utils.validation import is_empty_string
 
 
 class Provider(str, Enum):
@@ -32,8 +33,45 @@ class PluginConfig(BaseModel):
     enable_git_integration: bool = Field(default=True, description="Enable Git integration")
     timeout: int = Field(default=120, description="Request timeout in seconds")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
+
+    @field_validator('api_key')
+    @classmethod
+    def validate_api_key(cls, v: str) -> str:
+        """Validate API key is not empty."""
+        if is_empty_string(v):
+            raise ValueError("API key cannot be empty")
+        if len(v) < 10:
+            raise ValueError("API key appears to be too short")
+        return v.strip()
+
+    @field_validator('max_tokens')
+    @classmethod
+    def validate_max_tokens(cls, v: int) -> int:
+        """Validate max_tokens is positive and reasonable."""
+        if v <= 0:
+            raise ValueError("max_tokens must be positive")
+        if v > 100000:
+            raise ValueError("max_tokens is too large (max 100000)")
+        return v
+
+    @field_validator('temperature')
+    @classmethod
+    def validate_temperature(cls, v: float) -> float:
+        """Validate temperature is in valid range."""
+        if not 0.0 <= v <= 2.0:
+            raise ValueError("temperature must be between 0.0 and 2.0")
+        return v
+
+    @field_validator('timeout')
+    @classmethod
+    def validate_timeout(cls, v: int) -> int:
+        """Validate timeout is positive and reasonable."""
+        if v <= 0:
+            raise ValueError("timeout must be positive")
+        if v > 600:
+            raise ValueError("timeout is too large (max 600 seconds)")
+        return v
 
 
 class BasePlugin(ABC):

@@ -16,8 +16,15 @@ class AdvancedVulnChecker(AdvancedTool):
     - License vulnerabilities
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for vuln checker.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "check_vulnerabilities",
             "description": "Check for dependency vulnerabilities",
             "parameters": {

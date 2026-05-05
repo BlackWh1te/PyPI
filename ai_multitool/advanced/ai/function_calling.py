@@ -23,6 +23,13 @@ class AdvancedFunctionCalling(AdvancedTool):
         self.available_functions: Dict[str, Callable] = {}
     
     def get_tool_definition(self) -> Dict[str, Any]:
+        """Get the tool definition for function calling.
+        
+        Returns:
+            Tool definition dictionary with name, description, and parameters schema.
+            The definition follows the standard tool registration format for
+            integration with AI systems and CLI tools.
+        """
         return {
             "name": "function_calling",
             "description": "Advanced function calling and tool use",

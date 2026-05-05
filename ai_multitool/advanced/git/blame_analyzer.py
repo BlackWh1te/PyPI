@@ -22,8 +22,15 @@ class AdvancedBlameAnalyzer(AdvancedTool):
         super().__init__(*args, **kwargs)
         self.git_helper = GitHelper()
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for blame analyzer.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "analyze_blame",
             "description": "Git blame analysis with AI insights",
             "parameters": {
@@ -82,7 +89,7 @@ Provide insights in JSON:
             repo = git.Repo(repo_path)
             blame = repo.blame(repo.head, file_path)
             return str(blame)
-        except:
+        except (ImportError, ValueError, git.InvalidGitRepositoryError, git.NoSuchPathError):
             return "Blame information not available"
     
     def _get_repo_blame(self, repo_path: str) -> str:

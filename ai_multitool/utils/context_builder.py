@@ -14,6 +14,7 @@ from ai_multitool.core.exceptions import (
 from ai_multitool.parsers.code_parser import CodeParser, CodeStructure, get_parser
 from ai_multitool.utils.git_utils import GitHelper, GitContext, get_git_helper
 from ai_multitool.utils.file_utils import is_code_file
+from ai_multitool.utils.validation import is_empty_string
 
 
 @dataclass
@@ -45,7 +46,7 @@ class SmartContextBuilder:
         max_context_length: int = 8000
     ) -> AnalysisContext:
         """Build comprehensive analysis context for a file or directory."""
-        if not path or not path.strip():
+        if is_empty_string(path):
             raise ValidationError("Path cannot be empty", field="path")
         
         if max_related < 1 or max_related > 50:
@@ -282,7 +283,7 @@ class SmartContextBuilder:
     
     def build_directory_summary(self, directory: str, max_files: int = 20) -> str:
         """Build a summary of a directory's code structure."""
-        if not directory or not directory.strip():
+        if is_empty_string(directory):
             raise ValidationError("Directory path cannot be empty", field="directory")
         
         if max_files < 1 or max_files > 200:

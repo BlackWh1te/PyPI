@@ -5,6 +5,7 @@ from typing import Optional
 from pathlib import Path
 
 from ai_multitool.core.exceptions import KeyringError, ValidationError
+from ai_multitool.utils.validation import is_empty_string
 
 try:
     import keyring
@@ -38,10 +39,10 @@ class KeyManager:
                 suggestion="Install keyring: pip install keyring"
             )
         
-        if not key_id or not key_id.strip():
+        if is_empty_string(key_id):
             raise ValidationError("Key ID cannot be empty", field="key_id")
         
-        if not value or not value.strip():
+        if is_empty_string(value):
             raise ValidationError("Key value cannot be empty", field="value")
         
         try:
@@ -66,7 +67,7 @@ class KeyManager:
         if not self.available:
             return None
         
-        if not key_id or not key_id.strip():
+        if is_empty_string(key_id):
             raise ValidationError("Key ID cannot be empty", field="key_id")
         
         try:
@@ -97,7 +98,7 @@ class KeyManager:
                 suggestion="Install keyring: pip install keyring"
             )
         
-        if not key_id or not key_id.strip():
+        if is_empty_string(key_id):
             raise ValidationError("Key ID cannot be empty", field="key_id")
         
         try:

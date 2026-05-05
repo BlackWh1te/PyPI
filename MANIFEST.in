@@ -1,6 +1,6 @@
 include README.md
 include LICENSE
-include CHANGELOG.md
+include docs/CHANGELOG.md
 include pyproject.toml
 recursive-include ai_multitool *.py
 recursive-include ai_multitool/cli *.py
@@ -8,6 +8,7 @@ recursive-include ai_multitool/core *.py
 recursive-include ai_multitool/config *.py
 recursive-include ai_multitool/utils *.py
 recursive-include ai_multitool/agents *.py
+recursive-include docs *.md
 global-exclude __pycache__
 global-exclude *.py[cod]
 global-exclude *.so

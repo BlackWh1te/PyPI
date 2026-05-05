@@ -18,6 +18,13 @@ class AdvancedContextManager(AdvancedTool):
     """
     
     def get_tool_definition(self) -> Dict[str, Any]:
+        """Get the tool definition for context management.
+        
+        Returns:
+            Tool definition dictionary with name, description, and parameters schema.
+            The definition follows the standard tool registration format for
+            integration with AI systems and CLI tools.
+        """
         return {
             "name": "context_management",
             "description": "Advanced context window management",

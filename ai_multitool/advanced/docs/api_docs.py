@@ -16,8 +16,15 @@ class AdvancedAPIDocs(AdvancedTool):
     - Request/response schemas
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for api docs.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "generate_api_docs",
             "description": "API documentation from code",
             "parameters": {

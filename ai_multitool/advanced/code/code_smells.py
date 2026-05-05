@@ -28,6 +28,13 @@ class AdvancedCodeSmellDetection(AdvancedTool):
         self.code_parser = CodeParser()
     
     def get_tool_definition(self) -> Dict[str, Any]:
+        """Get the tool definition for code smell detection.
+        
+        Returns:
+            Tool definition dictionary with name, description, and parameters schema.
+            The definition follows the standard tool registration format for
+            integration with AI systems and CLI tools.
+        """
         return {
             "name": "detect_code_smells",
             "description": "Detect code smells and anti-patterns",
@@ -99,6 +106,7 @@ Provide JSON response:
             match = re.search(r'\{[\s\S]*\}', response)
             if match:
                 return json.loads(match.group()).get("smells", [])
-        except:
+        except (json.JSONDecodeError, ValueError, KeyError):
+            # If parsing fails, return empty list
             pass
         return []

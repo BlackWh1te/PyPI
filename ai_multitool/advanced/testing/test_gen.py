@@ -16,8 +16,15 @@ class AdvancedTestGeneration(AdvancedTool):
     - Performance tests
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for test gen.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "generate_tests",
             "description": "Automated test generation",
             "parameters": {

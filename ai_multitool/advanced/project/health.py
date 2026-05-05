@@ -18,8 +18,15 @@ class AdvancedProjectHealth(AdvancedTool):
     - Security posture
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for health.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "analyze_health",
             "description": "Project health scoring and metrics",
             "parameters": {

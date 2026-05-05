@@ -23,8 +23,15 @@ class AdvancedComplexityAnalysis(AdvancedTool):
         super().__init__(*args, **kwargs)
         self.code_parser = CodeParser()
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for complexity.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "analyze_complexity",
             "description": "Advanced code complexity analysis",
             "parameters": {
@@ -90,6 +97,7 @@ Provide JSON:
             match = re.search(r'\{[\s\S]*\}', response)
             if match:
                 return json.loads(match.group())
-        except:
+        except (json.JSONDecodeError, ValueError, KeyError):
+            # If parsing fails, return empty dict
             pass
         return {}

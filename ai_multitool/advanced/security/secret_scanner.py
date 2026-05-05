@@ -30,14 +30,21 @@ class AdvancedSecretScanner(AdvancedTool):
             "github_token": r'ghp_[a-zA-Z0-9]{36}',
             "slack_token": r'xox[bap]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32}',
             "stripe_key": r'sk_(live|test)_[0-9a-zA-Z]{24}',
-            "private_key': r'-----BEGIN ((RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----)',
+            "private_key": r'-----BEGIN ((RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----)',
             "api_key": r'(?i)(api[_-]?key|apikey)[\s=:]+["\']?[a-zA-Z0-9_\-]{16,}["\']?',
             "password": r'(?i)(password|passwd|pwd)[\s=:]+["\']?[^\s"\']{6,}["\']?',
             "token": r'(?i)(token|auth[_-]?token)[\s=:]+["\']?[a-zA-Z0-9_\-]{20,}["\']?',
         }
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for secret scanner.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "scan_secrets",
             "description": "Scan for secrets and credentials",
             "parameters": {

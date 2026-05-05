@@ -17,8 +17,15 @@ class AdvancedDependencies(AdvancedTool):
     - Security risks
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for dependencies.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "analyze_dependencies",
             "description": "Dependency graph and analysis",
             "parameters": {

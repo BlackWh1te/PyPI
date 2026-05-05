@@ -16,8 +16,15 @@ class AdvancedReadmeGen(AdvancedTool):
     - Architecture docs
     """
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for readme gen.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "generate_readme",
             "description": "README and documentation generation",
             "parameters": {
@@ -35,7 +42,7 @@ class AdvancedReadmeGen(AdvancedTool):
         start_time = time.time()
         
         try:
-            prompt = f"""Generate {doc_type} documentation"
+            prompt = f"Generate {doc_type} documentation"
             
             if project_info:
                 prompt += f"\n\nProject Info:\n{project_info}"

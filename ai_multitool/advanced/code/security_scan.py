@@ -37,8 +37,15 @@ class AdvancedSecurityScan(AdvancedTool):
             r'private[_-]?key\s*=\s*["\'][^"\']+["\']',
         ]
     
-    def get_tool_definition(self) -> Dict[str, Any]:
-        return {
+    
+        """Get the tool definition for security scan.
+
+Returns:
+    Tool definition dictionary with name, description, and parameters schema.
+    The definition follows the standard tool registration format for
+    integration with AI systems and CLI tools.
+"""
+        
             "name": "security_scan",
             "description": "Security vulnerability scanning in code",
             "parameters": {
@@ -134,6 +141,7 @@ Identify security vulnerabilities. Provide JSON:
             match = re.search(r'\{[\s\S]*\}', response)
             if match:
                 return json.loads(match.group()).get("vulnerabilities", [])
-        except:
+        except (json.JSONDecodeError, ValueError, KeyError):
+            # If parsing fails, return empty list
             pass
         return []

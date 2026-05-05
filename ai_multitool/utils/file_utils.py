@@ -10,11 +10,12 @@ from ai_multitool.core.exceptions import (
     PermissionError as CustomPermissionError,
     ValidationError,
 )
+from ai_multitool.utils.validation import is_empty_string
 
 
 def read_file(file_path: str, max_size: int = 10_000_000) -> str:
     """Read file content with error handling"""
-    if not file_path or not file_path.strip():
+    if is_empty_string(file_path):
         raise ValidationError("File path cannot be empty", field="file_path")
     
     path = Path(file_path)
@@ -114,7 +115,7 @@ def read_directory(directory: str, pattern: str = "*", max_files: int = 1000) ->
 
 def get_file_info(file_path: str) -> dict:
     """Get file information with error handling"""
-    if not file_path or not file_path.strip():
+    if is_empty_string(file_path):
         raise ValidationError("File path cannot be empty", field="file_path")
     
     path = Path(file_path)
@@ -176,7 +177,7 @@ def is_code_file(file_path: str) -> bool:
 
 def write_file(file_path: str, content: str, create_dirs: bool = False) -> None:
     """Write content to a file"""
-    if not file_path or not file_path.strip():
+    if is_empty_string(file_path):
         raise ValidationError("File path cannot be empty", field="file_path")
     
     if content is None:

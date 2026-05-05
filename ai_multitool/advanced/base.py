@@ -14,6 +14,7 @@ import re
 
 from ..core.llm_client import BaseLLMClient
 from ..utils.metrics import MetricsCollector
+from ..utils.prompt_optimizer import PromptOptimizer, InputTruncator
 
 
 class ToolStatus(str, Enum):
@@ -70,6 +71,12 @@ class AdvancedToolConfig(BaseModel):
     # Content size limits
     max_code_lines: int = 1000  # Max lines of code to analyze
     max_file_size_kb: int = 500  # Max file size in KB
+    
+    # Token reduction settings
+    enable_prompt_optimization: bool = True  # Optimize prompts to reduce tokens
+    enable_response_caching: bool = True  # Cache AI responses
+    enable_input_truncation: bool = True  # Truncate large inputs
+    target_token_reduction: float = 0.3  # Target 30% reduction
     
     # Category-specific configs
     code_analysis: Dict[str, Any] = Field(default_factory=dict)
@@ -348,6 +355,7 @@ class AdvancedTool(ABC):
                 del self._cache[key]
                 del self._cache_timestamps[key]
             else:
+                print(f"[CACHE HIT] Using cached response for key: {key[:16]}...")
                 return self._cache[key]
         return None
     
@@ -382,6 +390,63 @@ class AdvancedTool(ABC):
         """Clear all cached values."""
         self._cache.clear()
         self._cache_timestamps.clear()
+    
+    def _optimize_prompt(self, prompt: str) -> str:
+        """Optimize prompt to reduce token usage.
+        
+        Args:
+            prompt: Original prompt
+            
+        Returns:
+            Optimized prompt
+        """
+        if not self.config.enable_prompt_optimization:
+            return prompt
+        
+        # Calculate target max tokens
+        target_reduction = self.config.target_token_reduction
+        current_tokens = AdvancedSettings.estimate_tokens(prompt)
+        max_tokens = int(current_tokens * (1 - target_reduction))
+        
+        # Optimize the prompt
+        result = PromptOptimizer.optimize_prompt(prompt, max_tokens=max_tokens)
+        
+        # Log optimization if significant reduction
+        if result.reduction_percent > 10:
+            print(f"[PROMPT OPT] Reduced tokens by {result.reduction_percent}%: {result.original_tokens} → {result.optimized_tokens}")
+        
+        return result.optimized_prompt
+    
+    def _truncate_input(self, content: str, content_type: str = "text") -> str:
+        """Truncate input content to reduce token usage.
+        
+        Args:
+            content: Input content
+            content_type: Type of content (code, text, json)
+            
+        Returns:
+            Truncated content
+        """
+        if not self.config.enable_input_truncation:
+            return content
+        
+        # Check if content is too large
+        current_tokens = AdvancedSettings.estimate_tokens(content)
+        if current_tokens < 2000:  # Only truncate if > 2000 tokens
+            return content
+        
+        # Truncate based on content type
+        truncated = InputTruncator.smart_truncate(content, content_type)
+        
+        # Log truncation
+        original_tokens = current_tokens
+        new_tokens = AdvancedSettings.estimate_tokens(truncated)
+        reduction = ((original_tokens - new_tokens) / original_tokens * 100)
+        
+        if reduction > 10:
+            print(f"[INPUT TRUNC] Reduced tokens by {reduction:.1f}%: {original_tokens} → {new_tokens}")
+        
+        return truncated
     
     async def _execute_with_retry(
         self,
