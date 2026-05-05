@@ -5,6 +5,38 @@ All notable changes to ai-multitool will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-05-05
+
+### Added
+- **Major Refactor**: Transformed from standalone CLI tool to Python library for CLI tool integration
+- Plugin interface with `BasePlugin` for CLI tool integration
+- Adapter system with `BaseAdapter` for easy CLI tool integration
+- Pre-built adapters for Claude Code and Devin
+- Tool registry and tool definition system
+- Tool format converter (OpenAI, Anthropic, Generic formats)
+- Public Python API exposed in `__init__.py`
+- Plugin configuration with `PluginConfig`
+- Custom exception classes for plugin errors
+- Adapter utilities for tool format conversion
+- Example adapters for Claude Code and Devin integration
+- Comprehensive plugin integration documentation (PLUGIN_INTEGRATION.md)
+- Library API design documentation (LIBRARY_API_DESIGN.md)
+- Example scripts for different use cases (examples/ directory)
+- Examples: basic usage, Claude Code integration, Devin integration, custom adapter, RAG usage, code analysis
+
+### Changed
+- **Breaking Change**: Project is now a library, not a standalone CLI tool
+- Updated README to focus on plugin developers rather than end users
+- Updated version to 0.2.0
+- Updated pyproject.toml description and keywords to reflect library nature
+- Updated project classifiers to include library categories
+- CLI entry point maintained as optional/demo interface
+- All core functionality now accessible via public API
+
+### Deprecated
+- Standalone CLI usage is deprecated in favor of library usage
+- Direct CLI commands should use adapters instead
+
 ## [Unreleased]
 
 ### Added

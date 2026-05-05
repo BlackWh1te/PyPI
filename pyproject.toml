@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-multitool"
-version = "0.1.0"
-description = "AI-powered CLI multitool for developers"
+version = "0.2.0"
+description = "AI-powered multitool library for CLI tool integration"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
-keywords = ["ai", "cli", "llm", "anthropic", "openai", "developer-tools"]
+keywords = ["ai", "cli", "llm", "anthropic", "openai", "developer-tools", "plugin", "library", "integration", "rag", "code-analysis"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -21,6 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
 ]
 
 dependencies = [
