@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependency/import extraction from code
 - --context flag to enable/disable smart context builder (default: True)
 - Comprehensive analysis context including structure, git, stats, and related files
+- Secure API key management using system keyring
+- key_manager.py module for secure key storage and retrieval
+- keys CLI command with subcommands: set, get, delete, list, migrate
+- Settings now check keyring as fallback for API keys
+- Improved security by supporting OS-level keyring storage
 
 ### Changed
 - Updated README with current working features
@@ -37,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced analyze command to include code structure context in AI prompts
 - Enhanced analyze command to include git repository context in AI prompts
 - Enhanced analyze command to use smart context builder for richer AI context
+- Updated API key retrieval to use keyring fallback in settings
 
 ## [0.1.0] - 2025-05-05
 

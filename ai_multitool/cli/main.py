@@ -13,6 +13,7 @@ from ai_multitool.utils.file_utils import read_file, read_directory, is_code_fil
 from ai_multitool.parsers.code_parser import get_parser
 from ai_multitool.utils.git_utils import get_git_helper
 from ai_multitool.utils.context_builder import get_context_builder
+from ai_multitool.utils.key_manager import get_key_manager
 
 app = typer.Typer(
     name="ai-multitool",
@@ -50,10 +51,10 @@ def chat(
     # Use config defaults if not specified
     provider = provider or "anthropic"
     model = model or settings.default_model
-    api_key = settings.anthropic_api_key if provider == "anthropic" else settings.openai_api_key
+    api_key = settings.get_anthropic_key() if provider == "anthropic" else settings.get_openai_key()
 
     if not api_key:
-        console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env[/red]")
+        console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env, or use 'ai-multitool keys set'[/red]")
         raise typer.Exit(1)
 
     async def run_chat():
@@ -111,10 +112,10 @@ def analyze(
     settings = get_settings()
     provider = provider or "anthropic"
     model = model or settings.default_model
-    api_key = settings.anthropic_api_key if provider == "anthropic" else settings.openai_api_key
+    api_key = settings.get_anthropic_key() if provider == "anthropic" else settings.get_openai_key()
 
     if not api_key and not structure:
-        console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env[/red]")
+        console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env, or use 'ai-multitool keys set'[/red]")
         raise typer.Exit(1)
 
     # Get helpers
@@ -349,6 +350,171 @@ def config(
         # Set configuration (would need to update .env file)
         console.print(f"[yellow]Setting configuration is not yet implemented.[/yellow]")
         console.print(f"[dim]To set {key}={value}, edit your .env file directly.[/dim]")
+
+
+# Create a sub-app for keys management
+keys_app = typer.Typer(help="Manage API keys securely using system keyring")
+
+
+@keys_app.command("set")
+def keys_set(
+    provider: str = typer.Argument(..., help="Provider (anthropic or openai)"),
+    key: str = typer.Option(..., prompt=True, hide_input=True, help="API key to store"),
+):
+    """Store an API key securely in the system keyring"""
+    key_manager = get_key_manager()
+    
+    if not key_manager.is_available():
+        console.print("[red]Error: keyring library not installed. Install with: pip install keyring[/red]")
+        raise typer.Exit(1)
+    
+    provider = provider.lower()
+    
+    if provider == "anthropic":
+        success = key_manager.set_anthropic_key(key)
+        if success:
+            console.print("[bold green]✓[/bold green] Anthropic API key stored securely")
+        else:
+            console.print("[red]Error storing Anthropic API key[/red]")
+            raise typer.Exit(1)
+    elif provider == "openai":
+        success = key_manager.set_openai_key(key)
+        if success:
+            console.print("[bold green]✓[/bold green] OpenAI API key stored securely")
+        else:
+            console.print("[red]Error storing OpenAI API key[/red]")
+            raise typer.Exit(1)
+    else:
+        console.print(f"[red]Error: Unknown provider '{provider}'. Use 'anthropic' or 'openai'[/red]")
+        raise typer.Exit(1)
+
+
+@keys_app.command("get")
+def keys_get(
+    provider: str = typer.Argument(..., help="Provider (anthropic or openai)"),
+):
+    """Retrieve an API key from the system keyring"""
+    key_manager = get_key_manager()
+    
+    if not key_manager.is_available():
+        console.print("[red]Error: keyring library not installed[/red]")
+        raise typer.Exit(1)
+    
+    provider = provider.lower()
+    
+    if provider == "anthropic":
+        key = key_manager.get_anthropic_key()
+    elif provider == "openai":
+        key = key_manager.get_openai_key()
+    else:
+        console.print(f"[red]Error: Unknown provider '{provider}'. Use 'anthropic' or 'openai'[/red]")
+        raise typer.Exit(1)
+    
+    if key:
+        # Show masked key
+        masked = key[:4] + "*" * (len(key) - 4)
+        console.print(f"[bold cyan]{provider.capitalize()} API key:[/bold cyan] {masked}")
+        console.print(f"[dim]Full key: {key}[/dim]")
+    else:
+        console.print(f"[yellow]No {provider} API key found in keyring or environment[/yellow]")
+
+
+@keys_app.command("delete")
+def keys_delete(
+    provider: str = typer.Argument(..., help="Provider (anthropic or openai)"),
+):
+    """Delete an API key from the system keyring"""
+    key_manager = get_key_manager()
+    
+    if not key_manager.is_available():
+        console.print("[red]Error: keyring library not installed[/red]")
+        raise typer.Exit(1)
+    
+    provider = provider.lower()
+    
+    if provider == "anthropic":
+        success = key_manager.delete_anthropic_key()
+        if success:
+            console.print("[bold green]✓[/bold green] Anthropic API key deleted from keyring")
+        else:
+            console.print("[yellow]No Anthropic API key found in keyring[/yellow]")
+    elif provider == "openai":
+        success = key_manager.delete_openai_key()
+        if success:
+            console.print("[bold green]✓[/bold green] OpenAI API key deleted from keyring")
+        else:
+            console.print("[yellow]No OpenAI API key found in keyring[/yellow]")
+    else:
+        console.print(f"[red]Error: Unknown provider '{provider}'. Use 'anthropic' or 'openai'[/red]")
+        raise typer.Exit(1)
+
+
+@keys_app.command("list")
+def keys_list():
+    """List all stored API keys"""
+    key_manager = get_key_manager()
+    
+    if not key_manager.is_available():
+        console.print("[red]Error: keyring library not installed. Install with: pip install keyring[/red]")
+        raise typer.Exit(1)
+    
+    keys = key_manager.list_keys()
+    
+    console.print("[bold cyan]Stored API Keys:[/bold cyan]\n")
+    
+    if not keys:
+        console.print("[dim]No API keys stored in keyring[/dim]")
+        console.print("[dim]Keys can also be set via environment variables (ANTHROPIC_API_KEY, OPENAI_API_KEY)[/dim]")
+    else:
+        for key_id in keys:
+            if key_id == key_manager.ANTHROPIC_KEY:
+                key = key_manager.get_anthropic_key()
+                if key:
+                    masked = key[:4] + "*" * (len(key) - 4)
+                    console.print(f"  [bold]anthropic:[/bold] {masked}")
+            elif key_id == key_manager.OPENAI_KEY:
+                key = key_manager.get_openai_key()
+                if key:
+                    masked = key[:4] + "*" * (len(key) - 4)
+                    console.print(f"  [bold]openai:[/bold] {masked}")
+    
+    # Check environment variables
+    anthropic_env = key_manager.get_anthropic_key()
+    openai_env = key_manager.get_openai_key()
+    
+    if anthropic_env and key_manager.ANTHROPIC_KEY not in keys:
+        console.print(f"  [dim]anthropic (from env): {anthropic_env[:4]}{'*' * (len(anthropic_env) - 4)}[/dim]")
+    if openai_env and key_manager.OPENAI_KEY not in keys:
+        console.print(f"  [dim]openai (from env): {openai_env[:4]}{'*' * (len(openai_env) - 4)}[/dim]")
+
+
+@keys_app.command("migrate")
+def keys_migrate():
+    """Migrate API keys from .env file to secure keyring"""
+    key_manager = get_key_manager()
+    
+    if not key_manager.is_available():
+        console.print("[red]Error: keyring library not installed. Install with: pip install keyring[/red]")
+        raise typer.Exit(1)
+    
+    console.print("[bold cyan]Migrating API keys from environment to keyring...[/bold cyan]\n")
+    
+    migrated = key_manager.migrate_from_env()
+    
+    if migrated:
+        for provider, success in migrated.items():
+            if success:
+                console.print(f"[bold green]✓[/bold green] {provider.capitalize()} key migrated to keyring")
+            else:
+                console.print(f"[yellow]Could not migrate {provider} key[/yellow]")
+        
+        console.print("\n[dim]Tip: You can now remove the API keys from your .env file for better security[/dim]")
+    else:
+        console.print("[yellow]No keys to migrate (keys already in keyring or not found in environment)[/yellow]")
+
+
+# Add keys sub-app to main app
+app.add_typer(keys_app, name="keys")
 
 
 if __name__ == "__main__":

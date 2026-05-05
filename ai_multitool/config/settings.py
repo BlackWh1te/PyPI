@@ -37,6 +37,40 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    def get_anthropic_key(self) -> str:
+        """Get Anthropic API key from settings or keyring"""
+        if self.anthropic_api_key:
+            return self.anthropic_api_key
+        
+        # Try keyring as fallback
+        try:
+            from ai_multitool.utils.key_manager import get_key_manager
+            key_manager = get_key_manager()
+            key = key_manager.get_anthropic_key()
+            if key:
+                return key
+        except Exception:
+            pass
+        
+        return ""
+    
+    def get_openai_key(self) -> str:
+        """Get OpenAI API key from settings or keyring"""
+        if self.openai_api_key:
+            return self.openai_api_key
+        
+        # Try keyring as fallback
+        try:
+            from ai_multitool.utils.key_manager import get_key_manager
+            key_manager = get_key_manager()
+            key = key_manager.get_openai_key()
+            if key:
+                return key
+        except Exception:
+            pass
+        
+        return ""
+
 
 def get_settings() -> Settings:
     """Get application settings"""
