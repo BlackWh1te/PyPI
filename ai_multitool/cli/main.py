@@ -660,5 +660,185 @@ def clear_stats():
     console.print("[bold green]✓[/bold green] Metrics cleared")
 
 
+# Create a sub-app for RAG operations
+rag_app = typer.Typer(help="RAG (Retrieval-Augmented Generation) operations")
+
+
+@rag_app.command("index")
+def rag_index(
+    path: str = typer.Argument(..., help="File or directory to index"),
+    pattern: str = typer.Option("*.md", help="File pattern to match (e.g., *.md, *.txt)"),
+    output: str = typer.Option(None, help="Output file to save the index"),
+    chunk_size: int = typer.Option(1000, help="Chunk size in characters"),
+    chunk_overlap: int = typer.Option(200, help="Chunk overlap in characters"),
+    provider: str = typer.Option("openai", help="Embedding provider (openai)"),
+):
+    """Index documents for RAG search"""
+    from pathlib import Path
+    from ai_multitool.rag.embeddings import OpenAIEmbeddings
+    from ai_multitool.rag.chunkers import RecursiveCharacterChunker
+    from ai_multitool.rag.indexer import DocumentIndexer
+    
+    settings = get_settings()
+    
+    # Get API key for embeddings
+    if provider == "openai":
+        api_key = settings.get_openai_key()
+        if not api_key:
+            console.print("[red]Error: OpenAI API key not found. Set OPENAI_API_KEY in .env or use 'ai-multitool keys set openai'[/red]")
+            raise typer.Exit(1)
+        
+        embedding_model = OpenAIEmbeddings(api_key=api_key)
+    else:
+        console.print(f"[red]Error: Unknown provider '{provider}'. Use 'openai'[/red]")
+        raise typer.Exit(1)
+    
+    # Initialize chunker
+    chunker = RecursiveCharacterChunker(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    
+    # Initialize indexer
+    indexer = DocumentIndexer(embedding_model=embedding_model, chunker=chunker)
+    
+    try:
+        console.print(Panel(f"[bold cyan]Indexing: {path}[/bold cyan]"))
+        console.print(f"[dim]Pattern: {pattern} | Chunk size: {chunk_size} | Overlap: {chunk_overlap}[/dim]\n")
+        
+        path_obj = Path(path)
+        if path_obj.is_file():
+            # Index single file
+            content = read_file(path)
+            from ai_multitool.rag.indexer import Document
+            document = Document(
+                text=content,
+                doc_id=str(path_obj),
+                metadata={"file_path": str(path_obj), "file_name": path_obj.name}
+            )
+            indexer.add_document(document)
+            console.print(f"[bold green]✓[/bold green] Indexed 1 document")
+        elif path_obj.is_dir():
+            # Index directory
+            count = indexer.index_directory(str(path_obj), pattern=pattern)
+            console.print(f"[bold green]✓[/bold green] Indexed {count} documents")
+        else:
+            console.print(f"[red]Error: Not a file or directory: {path}[/red]")
+            raise typer.Exit(1)
+        
+        # Show stats
+        stats = indexer.get_stats()
+        console.print(f"\n[dim]Total chunks: {stats['total_chunks']}[/dim]")
+        console.print(f"[dim]Dimension: {stats['dimension']}[/dim]")
+        
+        # Save index if output specified
+        if output:
+            indexer.save(output)
+            console.print(f"[bold green]✓[/bold green] Index saved to {output}")
+        
+        # Save default index location if not specified
+        if not output:
+            default_index = Path.home() / ".ai-multitool" / "index"
+            default_index.parent.mkdir(parents=True, exist_ok=True)
+            indexer.save(str(default_index))
+            console.print(f"[dim]Index saved to {default_index}[/dim]")
+        
+    except Exception as e:
+        handle_error(e)
+        raise typer.Exit(1)
+
+
+@rag_app.command("search")
+def rag_search(
+    query: str = typer.Argument(..., help="Search query"),
+    top_k: int = typer.Option(5, help="Number of results to return"),
+    index: str = typer.Option(None, help="Index file to load (default: ~/.ai-multitool/index)"),
+    provider: str = typer.Option("openai", help="Embedding provider (openai)"),
+):
+    """Search indexed documents"""
+    from pathlib import Path
+    from ai_multitool.rag.embeddings import OpenAIEmbeddings
+    from ai_multitool.rag.retriever import SimilarityRetriever
+    from ai_multitool.rag.vector_store import InMemoryVectorStore
+    
+    settings = get_settings()
+    
+    # Determine index path
+    if index is None:
+        index = str(Path.home() / ".ai-multitool" / "index")
+    
+    # Check if index exists
+    if not Path(index).with_suffix(".json").exists():
+        console.print(f"[red]Error: Index not found at {index}[/red]")
+        console.print("[dim]Run 'ai-multitool rag index <path>' to create an index first[/dim]")
+        raise typer.Exit(1)
+    
+    # Get API key for embeddings
+    if provider == "openai":
+        api_key = settings.get_openai_key()
+        if not api_key:
+            console.print("[red]Error: OpenAI API key not found. Set OPENAI_API_KEY in .env or use 'ai-multitool keys set openai'[/red]")
+            raise typer.Exit(1)
+        
+        embedding_model = OpenAIEmbeddings(api_key=api_key)
+    else:
+        console.print(f"[red]Error: Unknown provider '{provider}'. Use 'openai'[/red]")
+        raise typer.Exit(1)
+    
+    try:
+        console.print(Panel(f"[bold cyan]Searching: {query}[/bold cyan]"))
+        console.print(f"[dim]Index: {index} | Top-K: {top_k}[/dim]\n")
+        
+        # Load vector store
+        vector_store = InMemoryVectorStore(dimension=1536)
+        vector_store.load(index)
+        
+        # Initialize retriever
+        retriever = SimilarityRetriever(vector_store=vector_store, embedding_model=embedding_model)
+        
+        # Search
+        result = retriever.retrieve(query, top_k=top_k)
+        
+        # Display results
+        console.print(Panel(retriever.format_results(result), title="Search Results"))
+        
+    except Exception as e:
+        handle_error(e)
+        raise typer.Exit(1)
+
+
+@rag_app.command("stats")
+def rag_stats(
+    index: str = typer.Option(None, help="Index file to load (default: ~/.ai-multitool/index)"),
+):
+    """Show statistics about an index"""
+    from pathlib import Path
+    from ai_multitool.rag.vector_store import InMemoryVectorStore
+    
+    # Determine index path
+    if index is None:
+        index = str(Path.home() / ".ai-multitool" / "index")
+    
+    # Check if index exists
+    if not Path(index).with_suffix(".json").exists():
+        console.print(f"[red]Error: Index not found at {index}[/red]")
+        console.print("[dim]Run 'ai-multitool rag index <path>' to create an index first[/dim]")
+        raise typer.Exit(1)
+    
+    try:
+        # Load vector store
+        vector_store = InMemoryVectorStore(dimension=1536)
+        vector_store.load(index)
+        
+        console.print(Panel(f"[bold cyan]Index Statistics[/bold cyan]"))
+        console.print(f"\n[bold]Total chunks:[/bold] {vector_store.count()}")
+        console.print(f"[bold]Dimension:[/bold] {vector_store.dimension}")
+        
+    except Exception as e:
+        handle_error(e)
+        raise typer.Exit(1)
+
+
+# Add RAG sub-app to main app
+app.add_typer(rag_app, name="rag")
+
+
 if __name__ == "__main__":
     app()
