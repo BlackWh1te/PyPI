@@ -10,6 +10,7 @@ from ai_multitool.core.llm_client import ClientFactory
 from ai_multitool.core.models import Message, MessageRole, ChatHistory
 from ai_multitool.config.settings import get_settings
 from ai_multitool.utils.file_utils import read_file, read_directory, is_code_file
+from ai_multitool.parsers.code_parser import get_parser
 
 app = typer.Typer(
     name="ai-multitool",
@@ -98,6 +99,7 @@ def analyze(
     path: str = typer.Argument(..., help="File or directory to analyze"),
     model: str = typer.Option(None, help="AI model to use (default from config)"),
     provider: str = typer.Option(None, help="AI provider (anthropic or openai)"),
+    structure: bool = typer.Option(False, help="Show code structure without AI analysis"),
 ):
     """Analyze code with AI"""
     from pathlib import Path
@@ -107,9 +109,12 @@ def analyze(
     model = model or settings.default_model
     api_key = settings.anthropic_api_key if provider == "anthropic" else settings.openai_api_key
 
-    if not api_key:
+    if not api_key and not structure:
         console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env[/red]")
         raise typer.Exit(1)
+
+    # Get code parser
+    parser = get_parser()
 
     async def run_analyze():
         console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
@@ -121,27 +126,58 @@ def analyze(
             console.print(f"[red]Error: Path not found: {path}[/red]")
             raise typer.Exit(1)
 
-        # Read content
+        # Parse code structure
         if path_obj.is_file():
+            structure_obj = parser.parse_file(path)
+            if not structure_obj:
+                console.print(f"[yellow]Could not parse file: {path}[/yellow]")
+                return
+            
+            structures = [structure_obj]
+            console.print(f"[dim]Language: {structure_obj.language}[/dim]")
+            console.print(f"[dim]Functions: {len(structure_obj.functions)}[/dim]")
+            console.print(f"[dim]Classes: {len(structure_obj.classes)}[/dim]")
+            console.print(f"[dim]Complexity: {structure_obj.complexity_score}[/dim]\n")
+            
+            if structure:
+                # Show structure only
+                console.print(Panel(parser.structure_to_context(structure_obj), title="Code Structure"))
+                return
+            
+            # Read actual content for AI analysis
             content = read_file(path)
             file_info = f"File: {path_obj.name} ({len(content)} chars)"
+            structure_context = parser.structure_to_context(structure_obj)
+            
         elif path_obj.is_dir():
-            # For directories, read all code files
-            files = read_directory(path)
-            if not files:
-                console.print("[yellow]No files found in directory[/yellow]")
+            # For directories, parse all code files
+            structures = parser.parse_directory(path, max_files=50)
+            if not structures:
+                console.print("[yellow]No code files found in directory[/yellow]")
                 return
-
+            
+            summary = parser.get_summary(structures)
+            console.print(f"[dim]{summary}[/dim]\n")
+            
+            if structure:
+                # Show structures only
+                for s in structures[:10]:
+                    console.print(Panel(parser.structure_to_context(s), title=f"{s.file_path}"))
+                if len(structures) > 10:
+                    console.print(f"[dim]... and {len(structures) - 10} more files[/dim]")
+                return
+            
+            # Read actual content for AI analysis
             content = ""
-            for file_path in files[:10]:  # Limit to 10 files
-                if is_code_file(file_path):
-                    try:
-                        file_content = read_file(file_path)
-                        content += f"\n\n# File: {file_path}\n{file_content}"
-                    except Exception as e:
-                        console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
+            for file_path in [s.file_path for s in structures[:10]]:
+                try:
+                    file_content = read_file(file_path)
+                    content += f"\n\n# File: {file_path}\n{file_content}"
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
 
-            file_info = f"Directory: {len(files)} files analyzed"
+            file_info = f"Directory: {len(structures)} files analyzed"
+            structure_context = summary
         else:
             console.print(f"[red]Error: Not a file or directory: {path}[/red]")
             raise typer.Exit(1)
@@ -149,10 +185,13 @@ def analyze(
         # Create client
         client = ClientFactory.create_client(provider, api_key, model)
 
-        # Build prompt
+        # Build prompt with structure context
         prompt = f"""Analyze the following code:
 
 {file_info}
+
+Code Structure:
+{structure_context}
 
 ```python
 {content[:10000]}
