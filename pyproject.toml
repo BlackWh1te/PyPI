@@ -7,7 +7,6 @@ name = "ai-multitool"
 version = "0.4.0"
 description = "AI-powered multitool library for CLI tool integration"
 readme = "README.md"
-readme-content-type = "text/markdown"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
