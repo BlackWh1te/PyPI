@@ -15,6 +15,7 @@ from ai_multitool.utils.git_utils import get_git_helper
 from ai_multitool.utils.context_builder import get_context_builder
 from ai_multitool.utils.key_manager import get_key_manager
 from ai_multitool.utils.sanitizer import get_sanitizer
+from ai_multitool.utils.metrics import get_metrics_collector, MetricsContext
 
 app = typer.Typer(
     name="ai-multitool",
@@ -68,6 +69,9 @@ def chat(
         # Create message
         message = Message(role=MessageRole.USER, content=prompt)
 
+        # Get metrics collector
+        metrics_collector = get_metrics_collector()
+
         # Make API call
         with Progress(
             SpinnerColumn(),
@@ -79,13 +83,18 @@ def chat(
             if stream:
                 # Streaming response
                 response_text = ""
-                async for chunk in client.stream_chat([message], temperature=temperature):
-                    console.print(chunk, end="")
-                    response_text += chunk
-                console.print()  # New line
+                with MetricsContext(metrics_collector, provider, model, "chat") as metrics_ctx:
+                    async for chunk in client.stream_chat([message], temperature=temperature):
+                        console.print(chunk, end="")
+                        response_text += chunk
+                    console.print()  # New line
             else:
                 # Non-streaming response
-                response = await client.chat([message], temperature=temperature)
+                with MetricsContext(metrics_collector, provider, model, "chat") as metrics_ctx:
+                    response = await client.chat([message], temperature=temperature)
+                    metrics_ctx.tokens_used = response.tokens_used
+                    metrics_ctx.cached = response.cached
+                
                 console.print(Panel(response.content, title="AI Response"))
 
                 # Show metadata
@@ -299,6 +308,9 @@ Please provide:
         # Create client
         client = ClientFactory.create_client(provider, api_key, model)
 
+        # Get metrics collector
+        metrics_collector = get_metrics_collector()
+
         # Make API call
         with Progress(
             SpinnerColumn(),
@@ -307,7 +319,10 @@ Please provide:
         ) as progress:
             task = progress.add_task("Analyzing...", total=None)
 
-            response = await client.chat([Message(role=MessageRole.USER, content=prompt)])
+            with MetricsContext(metrics_collector, provider, model, "analyze") as metrics_ctx:
+                response = await client.chat([Message(role=MessageRole.USER, content=prompt)])
+                metrics_ctx.tokens_used = response.tokens_used
+                metrics_ctx.cached = response.cached
 
         # Display analysis
         console.print(Panel(response.content, title="AI Analysis"))
@@ -542,6 +557,73 @@ def keys_migrate():
 
 # Add keys sub-app to main app
 app.add_typer(keys_app, name="keys")
+
+
+@app.command()
+def stats(
+    days: int = typer.Option(30, help="Number of days to include in statistics"),
+    recent: int = typer.Option(10, help="Number of recent calls to show"),
+):
+    """Show usage statistics and metrics"""
+    metrics_collector = get_metrics_collector()
+    
+    stats = metrics_collector.get_stats(days=days)
+    recent_calls = metrics_collector.get_recent_calls(limit=recent)
+    
+    console.print(Panel(f"[bold cyan]Usage Statistics (Last {days} days)[/bold cyan]"))
+    
+    if stats.total_calls == 0:
+        console.print("\n[dim]No API calls recorded yet.[/dim]")
+        return
+    
+    # Summary
+    console.print(f"\n[bold]Summary:[/bold]")
+    console.print(f"  Total calls: {stats.total_calls}")
+    console.print(f"  Successful: {stats.successful_calls}")
+    console.print(f"  Failed: {stats.failed_calls}")
+    console.print(f"  Total tokens: {stats.total_tokens:,}")
+    console.print(f"  Avg latency: {stats.avg_latency_ms:.0f}ms")
+    console.print(f"  Cache hits: {stats.cache_hits} ({stats.cache_hits/stats.total_calls*100:.1f}%)")
+    
+    # By provider
+    console.print(f"\n[bold]By Provider:[/bold]")
+    for provider, count in sorted(stats.by_provider.items(), key=lambda x: x[1], reverse=True):
+        console.print(f"  {provider}: {count}")
+    
+    # By model
+    console.print(f"\n[bold]By Model:[/bold]")
+    for model, count in sorted(stats.by_model.items(), key=lambda x: x[1], reverse=True):
+        console.print(f"  {model}: {count}")
+    
+    # By command
+    console.print(f"\n[bold]By Command:[/bold]")
+    for command, count in sorted(stats.by_command.items(), key=lambda x: x[1], reverse=True):
+        console.print(f"  {command}: {count}")
+    
+    # Recent calls
+    if recent_calls:
+        console.print(f"\n[bold]Recent Calls (Last {len(recent_calls)}):[/bold]")
+        for call in recent_calls:
+            status = "[green]✓[/green]" if call.success else "[red]✗[/red]"
+            cache = "[dim](cached)[/dim]" if call.cached else ""
+            console.print(f"  {status} {call.timestamp[:19]} | {call.provider}/{call.model} | {call.command} | {call.tokens_used} tokens | {call.latency_ms:.0f}ms {cache}")
+
+
+@app.command()
+def clear_stats():
+    """Clear all usage metrics"""
+    metrics_collector = get_metrics_collector()
+    
+    console.print("[yellow]This will delete all stored usage metrics.[/yellow]")
+    console.print("[dim]Metrics are stored locally and are not shared with any service.[/dim]")
+    
+    confirm = typer.confirm("Are you sure you want to clear all metrics?")
+    if not confirm:
+        console.print("[dim]Cancelled.[/dim]")
+        return
+    
+    metrics_collector.clear_metrics()
+    console.print("[bold green]✓[/bold green] Metrics cleared")
 
 
 if __name__ == "__main__":

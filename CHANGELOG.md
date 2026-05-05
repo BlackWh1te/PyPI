@@ -43,6 +43,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File safety checking to skip potentially unsafe files (.env, .pem, .key, etc.)
 - --sanitize flag to enable/disable content sanitization (default: True)
 - Binary content detection to prevent sending non-text data to AI
+- Metrics collection and monitoring for usage analytics
+- metrics.py module for tracking API calls and performance
+- stats CLI command to view usage statistics
+- clear-stats CLI command to clear all metrics
+- MetricsContext for automatic timing and recording of API calls
+- Local metrics storage in ~/.ai-multitool/metrics.json
+- Statistics by provider, model, and command type
+- Cache hit tracking and latency monitoring
+- Recent calls history with status indicators
+- Integrated metrics collection into chat and analyze commands
 
 ### Changed
 - Updated README with current working features
@@ -52,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced analyze command to use smart context builder for richer AI context
 - Updated API key retrieval to use keyring fallback in settings
 - Enhanced analyze command with automatic content sanitization
+- Integrated automatic metrics collection into chat and analyze commands
 
 ## [0.1.0] - 2025-05-05
 

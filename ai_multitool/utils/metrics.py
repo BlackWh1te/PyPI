@@ -1,0 +1,230 @@
+"""Metrics collection and monitoring for usage analytics."""
+
+import json
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional
+from dataclasses import dataclass, asdict
+from collections import defaultdict
+
+
+@dataclass
+class APICallMetrics:
+    """Metrics for a single API call."""
+    timestamp: str
+    provider: str
+    model: str
+    command: str  # chat, analyze, etc.
+    tokens_used: int
+    latency_ms: float
+    cached: bool
+    success: bool
+    error_message: Optional[str] = None
+
+
+@dataclass
+class UsageStats:
+    """Aggregated usage statistics."""
+    total_calls: int
+    successful_calls: int
+    failed_calls: int
+    total_tokens: int
+    total_latency_ms: float
+    avg_latency_ms: float
+    cache_hits: int
+    cache_misses: int
+    by_provider: Dict[str, int]
+    by_model: Dict[str, int]
+    by_command: Dict[str, int]
+
+
+class MetricsCollector:
+    """Collect and track usage metrics."""
+    
+    def __init__(self, metrics_file: str = None):
+        """Initialize the metrics collector."""
+        if metrics_file is None:
+            # Default to ~/.ai-multitool/metrics.json
+            home_dir = Path.home()
+            metrics_dir = home_dir / ".ai-multitool"
+            metrics_dir.mkdir(exist_ok=True)
+            metrics_file = metrics_dir / "metrics.json"
+        
+        self.metrics_file = Path(metrics_file)
+        self.metrics: List[APICallMetrics] = []
+        self._load_metrics()
+    
+    def _load_metrics(self):
+        """Load metrics from file."""
+        if self.metrics_file.exists():
+            try:
+                with open(self.metrics_file, 'r') as f:
+                    data = json.load(f)
+                    self.metrics = [APICallMetrics(**m) for m in data]
+            except Exception as e:
+                print(f"Warning: Could not load metrics file: {e}")
+                self.metrics = []
+    
+    def _save_metrics(self):
+        """Save metrics to file."""
+        try:
+            with open(self.metrics_file, 'w') as f:
+                json.dump([asdict(m) for m in self.metrics], f, indent=2)
+        except Exception as e:
+            print(f"Warning: Could not save metrics file: {e}")
+    
+    def record_call(
+        self,
+        provider: str,
+        model: str,
+        command: str,
+        tokens_used: int,
+        latency_ms: float,
+        cached: bool,
+        success: bool = True,
+        error_message: Optional[str] = None
+    ):
+        """Record an API call."""
+        metric = APICallMetrics(
+            timestamp=datetime.now().isoformat(),
+            provider=provider,
+            model=model,
+            command=command,
+            tokens_used=tokens_used,
+            latency_ms=latency_ms,
+            cached=cached,
+            success=success,
+            error_message=error_message
+        )
+        self.metrics.append(metric)
+        self._save_metrics()
+    
+    def get_stats(self, days: int = 30) -> UsageStats:
+        """Get aggregated usage statistics."""
+        # Filter metrics by date range
+        cutoff = datetime.now().timestamp() - (days * 24 * 60 * 60)
+        recent_metrics = [
+            m for m in self.metrics
+            if datetime.fromisoformat(m.timestamp).timestamp() > cutoff
+        ]
+        
+        if not recent_metrics:
+            return UsageStats(
+                total_calls=0,
+                successful_calls=0,
+                failed_calls=0,
+                total_tokens=0,
+                total_latency_ms=0,
+                avg_latency_ms=0,
+                cache_hits=0,
+                cache_misses=0,
+                by_provider={},
+                by_model={},
+                by_command={}
+            )
+        
+        total_calls = len(recent_metrics)
+        successful_calls = sum(1 for m in recent_metrics if m.success)
+        failed_calls = total_calls - successful_calls
+        total_tokens = sum(m.tokens_used for m in recent_metrics)
+        total_latency = sum(m.latency_ms for m in recent_metrics)
+        avg_latency = total_latency / total_calls
+        cache_hits = sum(1 for m in recent_metrics if m.cached)
+        cache_misses = total_calls - cache_hits
+        
+        by_provider = defaultdict(int)
+        by_model = defaultdict(int)
+        by_command = defaultdict(int)
+        
+        for m in recent_metrics:
+            by_provider[m.provider] += 1
+            by_model[m.model] += 1
+            by_command[m.command] += 1
+        
+        return UsageStats(
+            total_calls=total_calls,
+            successful_calls=successful_calls,
+            failed_calls=failed_calls,
+            total_tokens=total_tokens,
+            total_latency_ms=total_latency,
+            avg_latency_ms=avg_latency,
+            cache_hits=cache_hits,
+            cache_misses=cache_misses,
+            by_provider=dict(by_provider),
+            by_model=dict(by_model),
+            by_command=dict(by_command)
+        )
+    
+    def get_recent_calls(self, limit: int = 10) -> List[APICallMetrics]:
+        """Get recent API calls."""
+        return self.metrics[-limit:][::-1]  # Last N calls, reversed
+    
+    def clear_metrics(self):
+        """Clear all metrics."""
+        self.metrics = []
+        self._save_metrics()
+    
+    def export_metrics(self, output_file: str):
+        """Export metrics to a file."""
+        output_path = Path(output_file)
+        try:
+            with open(output_path, 'w') as f:
+                json.dump([asdict(m) for m in self.metrics], f, indent=2)
+            return True
+        except Exception as e:
+            print(f"Error exporting metrics: {e}")
+            return False
+
+
+class MetricsContext:
+    """Context manager for timing and recording API calls."""
+    
+    def __init__(self, collector: MetricsCollector, provider: str, model: str, command: str):
+        """Initialize the metrics context."""
+        self.collector = collector
+        self.provider = provider
+        self.model = model
+        self.command = command
+        self.start_time = None
+        self.success = True
+        self.error_message = None
+        self.tokens_used = 0
+        self.cached = False
+    
+    def __enter__(self):
+        """Start timing."""
+        self.start_time = time.time()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """End timing and record metrics."""
+        if exc_type is not None:
+            self.success = False
+            self.error_message = str(exc_val)
+        
+        latency_ms = (time.time() - self.start_time) * 1000 if self.start_time else 0
+        
+        self.collector.record_call(
+            provider=self.provider,
+            model=self.model,
+            command=self.command,
+            tokens_used=self.tokens_used,
+            latency_ms=latency_ms,
+            cached=self.cached,
+            success=self.success,
+            error_message=self.error_message
+        )
+        return False  # Don't suppress exceptions
+
+
+# Singleton instance
+_metrics_collector_instance: Optional[MetricsCollector] = None
+
+
+def get_metrics_collector() -> MetricsCollector:
+    """Get the singleton metrics collector instance."""
+    global _metrics_collector_instance
+    if _metrics_collector_instance is None:
+        _metrics_collector_instance = MetricsCollector()
+    return _metrics_collector_instance
