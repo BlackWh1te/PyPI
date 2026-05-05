@@ -25,6 +25,7 @@ from ai_multitool.utils.context_builder import get_context_builder
 from ai_multitool.utils.key_manager import get_key_manager
 from ai_multitool.utils.sanitizer import get_sanitizer
 from ai_multitool.utils.metrics import get_metrics_collector, MetricsContext
+from ai_multitool.utils.rag_helper import get_rag_context, check_rag_available
 
 app = typer.Typer(
     name="ai-multitool",
@@ -73,6 +74,9 @@ def chat(
     provider: str = typer.Option(None, help="AI provider (anthropic or openai)"),
     stream: bool = typer.Option(False, help="Stream the response"),
     temperature: float = typer.Option(0.7, help="Temperature for generation"),
+    rag: bool = typer.Option(False, help="Use RAG to retrieve relevant context from indexed documents"),
+    rag_index: str = typer.Option(None, help="Path to RAG index (default: ~/.ai-multitool/index)"),
+    rag_top_k: int = typer.Option(3, help="Number of RAG results to include"),
 ):
     """Chat with an AI model"""
     settings = get_settings()
@@ -91,11 +95,36 @@ def chat(
             console.print(Panel(f"[bold cyan]Chatting with {provider}/{model}[/bold cyan]"))
             console.print(f"[dim]Prompt: {prompt}[/dim]\n")
 
+            # Get RAG context if enabled
+            rag_context = ""
+            if rag:
+                if check_rag_available(rag_index):
+                    console.print(f"[dim]Retrieving RAG context...[/dim]")
+                    rag_context = get_rag_context(prompt, rag_index, rag_top_k)
+                    if rag_context:
+                        console.print(f"[dim]Found {rag_top_k} relevant documents[/dim]\n")
+                    else:
+                        console.print(f"[yellow]No relevant documents found[/yellow]\n")
+                else:
+                    console.print(f"[yellow]RAG index not found. Run 'ai-multitool rag index <path>' to create an index.[/yellow]\n")
+
+            # Build enhanced prompt with RAG context
+            if rag_context:
+                enhanced_prompt = f"""Use the following retrieved context to answer the user's question:
+
+{rag_context}
+
+User Question: {prompt}
+
+Please provide a helpful answer based on the retrieved context. If the context doesn't contain relevant information, say so and provide a general response."""
+            else:
+                enhanced_prompt = prompt
+
             # Create client
             client = ClientFactory.create_client(provider, api_key, model)
 
             # Create message
-            message = Message(role=MessageRole.USER, content=prompt)
+            message = Message(role=MessageRole.USER, content=enhanced_prompt)
 
             # Get metrics collector
             metrics_collector = get_metrics_collector()
@@ -147,6 +176,9 @@ def analyze(
     git: bool = typer.Option(True, help="Include git repository context"),
     context: bool = typer.Option(True, help="Use smart context builder for enhanced analysis"),
     sanitize: bool = typer.Option(True, help="Sanitize content for security (redact sensitive data)"),
+    rag_context: bool = typer.Option(False, help="Use RAG to retrieve relevant documentation context"),
+    rag_index: str = typer.Option(None, help="Path to RAG index (default: ~/.ai-multitool/index)"),
+    rag_top_k: int = typer.Option(3, help="Number of RAG results to include"),
 ):
     """Analyze code with AI"""
     from pathlib import Path
@@ -317,12 +349,32 @@ def analyze(
                     except Exception as e:
                         console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
 
+            # Get RAG context if enabled
+            rag_retrieved_context = ""
+            if rag_context:
+                # Build a query from the path for RAG
+                rag_query = f"Analyze code in {path}"
+                if check_rag_available(rag_index):
+                    console.print(f"[dim]Retrieving RAG context...[/dim]")
+                    rag_retrieved_context = get_rag_context(rag_query, rag_index, rag_top_k)
+                    if rag_retrieved_context:
+                        console.print(f"[dim]Found {rag_top_k} relevant documents[/dim]\n")
+                    else:
+                        console.print(f"[yellow]No relevant documentation found[/yellow]\n")
+                else:
+                    console.print(f"[yellow]RAG index not found. Run 'ai-multitool rag index <path>' to create an index.[/yellow]\n")
+
             # Build final prompt with smart context
             if context:
+                # Build prompt with RAG context if available
+                rag_section = ""
+                if rag_retrieved_context:
+                    rag_section = f"\n\nRelevant Documentation:\n{rag_retrieved_context}\n"
+                
                 prompt = f"""Analyze the following code with the provided context:
 
 {context_str}
-
+{rag_section}
 Code Content:
 ```python
 {content[:10000]}
@@ -335,6 +387,13 @@ Please provide:
 """
             else:
                 prompt = context_str
+                if rag_retrieved_context:
+                    prompt = f"""{context_str}
+
+Relevant Documentation:
+{rag_retrieved_context}
+
+Please analyze the code considering the documentation above."""
 
             # Create client
             client = ClientFactory.create_client(provider, api_key, model)
