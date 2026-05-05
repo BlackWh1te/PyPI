@@ -8,6 +8,9 @@ from ai_multitool.rag.embeddings import EmbeddingModel
 from ai_multitool.rag.chunkers import DocumentChunker, RecursiveCharacterChunker
 from ai_multitool.rag.vector_store import VectorStore, InMemoryVectorStore
 from ai_multitool.core.exceptions import ValidationError
+from ai_multitool.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -111,18 +114,26 @@ class DocumentIndexer:
         self,
         directory: str,
         pattern: str = "*.md",
-        metadata: Optional[dict] = None
+        metadata: Optional[dict] = None,
+        max_files: int = 1000,
+        max_total_size: int = 100_000_000,  # 100MB
+        batch_size: int = 50
     ) -> int:
-        """Index all files in a directory.
+        """Index all files in a directory with memory limits.
         
         Args:
             directory: Path to directory
             pattern: File pattern to match (e.g., "*.md", "*.txt")
             metadata: Additional metadata to add to all documents
+            max_files: Maximum number of files to index (default: 1000)
+            max_total_size: Maximum total size in bytes (default: 100MB)
+            batch_size: Number of documents to process at once (default: 50)
             
         Returns:
             Number of documents indexed
         """
+        logger.info(f"Indexing directory: {directory} with pattern: {pattern}")
+        logger.info(f"Memory limits: max_files={max_files}, max_total_size={max_total_size/1024/1024:.1f}MB")
         from ai_multitool.utils.file_utils import read_file
         
         dir_path = Path(directory)
@@ -130,14 +141,29 @@ class DocumentIndexer:
             raise ValidationError(f"Directory not found: {directory}", field="directory")
         
         documents = []
+        total_size = 0
+        file_count = 0
+        
         for file_path in dir_path.rglob(pattern):
             if file_path.is_file():
+                # Check file count limit
+                if file_count >= max_files:
+                    logger.warning(f"Reached max_files limit ({max_files}), skipping remaining files")
+                    break
+                
+                # Check total size limit
+                file_size = file_path.stat().st_size
+                if total_size + file_size > max_total_size:
+                    logger.warning(f"Reached max_total_size limit ({max_total_size/1024/1024:.1f}MB), skipping remaining files")
+                    break
+                
                 try:
                     text = read_file(str(file_path))
                     doc_metadata = {
                         "file_path": str(file_path),
                         "file_name": file_path.name,
                         "file_extension": file_path.suffix,
+                        "file_size": file_size,
                     }
                     if metadata:
                         doc_metadata.update(metadata)
@@ -148,14 +174,25 @@ class DocumentIndexer:
                         metadata=doc_metadata
                     )
                     documents.append(document)
-                except Exception:
-                    # Skip files that fail to read
+                    total_size += file_size
+                    file_count += 1
+                    
+                    # Process in batches to reduce memory usage
+                    if len(documents) >= batch_size:
+                        self.add_documents(documents)
+                        documents = []  # Clear to free memory
+                        logger.info(f"Processed batch of {batch_size} documents, total indexed: {file_count}")
+                        
+                except Exception as e:
+                    logger.warning(f"Skipping file {file_path}: {e}")
                     continue
         
+        # Process remaining documents in final batch
         if documents:
             self.add_documents(documents)
         
-        return len(documents)
+        logger.info(f"Indexing complete: {file_count} documents indexed, total size: {total_size/1024/1024:.1f}MB")
+        return file_count
     
     def get_stats(self) -> dict:
         """Get statistics about the index."""

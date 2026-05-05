@@ -167,6 +167,310 @@ Please provide a helpful answer based on the retrieved context. If the context d
     asyncio.run(run_chat())
 
 
+def validate_analyze_inputs(provider: str, model: str, structure: bool, settings) -> tuple[str, str, str]:
+    """Validate and normalize analyze command inputs.
+    
+    Args:
+        provider: AI provider
+        model: AI model
+        structure: Whether to show structure only
+        settings: Application settings
+        
+    Returns:
+        Tuple of (provider, model, api_key)
+        
+    Raises:
+        typer.Exit: If API key is missing and structure is False
+    """
+    provider = provider or "anthropic"
+    model = model or settings.default_model
+    api_key = settings.get_anthropic_key() if provider == "anthropic" else settings.get_openai_key()
+    
+    if not api_key and not structure:
+        console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env, or use 'ai-multitool keys set'[/red]")
+        raise typer.Exit(1)
+    
+    return provider, model, api_key
+
+
+def display_analysis_context(analysis_context, structure: bool, git_helper, path_obj) -> bool:
+    """Display analysis context and return True if structure-only mode.
+    
+    Args:
+        analysis_context: Analysis context object
+        structure: Whether to show structure only
+        git_helper: Git helper instance
+        path_obj: Path object
+        
+    Returns:
+        True if structure-only mode, False otherwise
+    """
+    if analysis_context.git_context and analysis_context.git_context.is_repo:
+        console.print(f"[dim]Git: {analysis_context.git_context.branch} | {analysis_context.git_context.status}[/dim]")
+    
+    if analysis_context.code_structure:
+        console.print(f"[dim]Language: {analysis_context.code_structure.language}[/dim]")
+        console.print(f"[dim]Functions: {len(analysis_context.code_structure.functions)}[/dim]")
+        console.print(f"[dim]Classes: {len(analysis_context.code_structure.classes)}[/dim]")
+        console.print(f"[dim]Complexity: {analysis_context.code_structure.complexity_score}[/dim]\n")
+    
+    if structure:
+        console.print(Panel(analysis_context.context_string, title="Analysis Context"))
+        return True
+    
+    return False
+
+
+def build_legacy_context(path_obj, parser, git_helper, git: bool, structure: bool) -> tuple[str, str, bool]:
+    """Build context using legacy approach.
+    
+    Args:
+        path_obj: Path object
+        parser: Code parser instance
+        git_helper: Git helper instance
+        git: Whether to include git context
+        structure: Whether to show structure only
+        
+    Returns:
+        Tuple of (context_str, content, should_return)
+    """
+    git_context_str = ""
+    if git:
+        git_context = git_helper.get_context(str(path_obj.absolute()) if path_obj.is_file() else str(path_obj.absolute()))
+        git_context_str = git_helper.context_to_string(git_context)
+        if git_context.is_repo:
+            console.print(f"[dim]Git: {git_context.branch} | {git_context.status}[/dim]\n")
+
+    if path_obj.is_file():
+        structure_obj = parser.parse_file(str(path_obj))
+        if not structure_obj:
+            console.print(f"[yellow]Could not parse file: {path_obj}[/yellow]")
+            return "", "", True
+        
+        console.print(f"[dim]Language: {structure_obj.language}[/dim]")
+        console.print(f"[dim]Functions: {len(structure_obj.functions)}[/dim]")
+        console.print(f"[dim]Classes: {len(structure_obj.classes)}[/dim]")
+        console.print(f"[dim]Complexity: {structure_obj.complexity_score}[/dim]\n")
+        
+        if structure:
+            console.print(Panel(parser.structure_to_context(structure_obj), title="Code Structure"))
+            if git and git_context.is_repo:
+                console.print(Panel(git_context_str, title="Git Context"))
+            return "", "", True
+        
+        content = read_file(str(path_obj))
+        file_info = f"File: {path_obj.name} ({len(content)} chars)"
+        structure_context = parser.structure_to_context(structure_obj)
+        
+    elif path_obj.is_dir():
+        structures = parser.parse_directory(str(path_obj), max_files=50)
+        if not structures:
+            console.print("[yellow]No code files found in directory[/yellow]")
+            return "", "", True
+        
+        summary = parser.get_summary(structures)
+        console.print(f"[dim]{summary}[/dim]\n")
+        
+        if structure:
+            for s in structures[:10]:
+                console.print(Panel(parser.structure_to_context(s), title=f"{s.file_path}"))
+            if len(structures) > 10:
+                console.print(f"[dim]... and {len(structures) - 10} more files[/dim]")
+            if git and git_context.is_repo:
+                console.print(Panel(git_context_str, title="Git Context"))
+            return "", "", True
+        
+        content = ""
+        total_size = 0
+        max_total_size = 50_000_000  # 50MB limit for directory analysis
+        
+        for file_path in [s.file_path for s in structures[:10]]:
+            try:
+                file_content = read_file(file_path)
+                file_size = len(file_content.encode('utf-8'))
+                
+                # Check total size limit
+                if total_size + file_size > max_total_size:
+                    console.print(f"[yellow]Warning: Reached size limit ({max_total_size/1024/1024:.1f}MB), skipping remaining files[/yellow]")
+                    break
+                
+                content += f"\n\n# File: {file_path}\n{file_content}"
+                total_size += file_size
+            except Exception as e:
+                console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
+
+        file_info = f"Directory: {len(structures)} files analyzed"
+        structure_context = summary
+    else:
+        console.print(f"[red]Error: Not a file or directory: {path_obj}[/red]")
+        raise typer.Exit(1)
+
+    # Build prompt
+    prompt_parts = [f"Analyze the following code:\n\n{file_info}"]
+    if git_context_str:
+        prompt_parts.append(f"\n{git_context_str}")
+    prompt_parts.extend([
+        f"\nCode Structure:\n{structure_context}",
+        f"\n```python\n{content[:10000]}\n```",
+        "\nPlease provide:",
+        "1. A summary of what this code does",
+        "2. Any potential issues or improvements",
+        "3. Best practices that could be applied",
+    ])
+    context_str = "\n".join(prompt_parts)
+    
+    return context_str, content, False
+
+
+def read_and_sanitize_content(path_obj, parser, sanitizer, sanitize: bool) -> str:
+    """Read and sanitize file/directory content.
+    
+    Args:
+        path_obj: Path object
+        parser: Code parser instance
+        sanitizer: Content sanitizer instance
+        sanitize: Whether to sanitize content
+        
+    Returns:
+        Sanitized content string
+    """
+    if path_obj.is_file():
+        content = read_file(str(path_obj))
+        
+        if sanitize:
+            result = sanitizer.sanitize(content, str(path_obj))
+            if result.issues_found:
+                console.print(f"[yellow]Security issues found: {', '.join(result.issues_found)}[/yellow]")
+            if result.warnings:
+                console.print(f"[dim]Warnings: {', '.join(result.warnings)}[/dim]")
+            content = result.sanitized_content
+    else:
+        structures = parser.parse_directory(str(path_obj), max_files=10)
+        content = ""
+        for file_path in [s.file_path for s in structures[:10]]:
+            try:
+                file_content = read_file(file_path)
+                
+                is_safe, warnings = sanitizer.check_file_safety(file_path)
+                if not is_safe:
+                    console.print(f"[yellow]Skipping potentially unsafe file: {file_path}[/yellow]")
+                    console.print(f"[dim]Reason: {warnings[0]}[/dim]")
+                    continue
+                
+                if sanitize:
+                    result = sanitizer.sanitize(file_content, file_path)
+                    if result.issues_found:
+                        console.print(f"[yellow]Security issues in {Path(file_path).name}: {', '.join(result.issues_found)}[/yellow]")
+                    file_content = result.sanitized_content
+                
+                content += f"\n\n# File: {file_path}\n{file_content}"
+            except Exception as e:
+                console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
+    
+    return content
+
+
+def get_rag_context_for_analysis(rag_context: bool, rag_index: str, rag_top_k: int, path: str) -> str:
+    """Retrieve RAG context for analysis.
+    
+    Args:
+        rag_context: Whether to use RAG
+        rag_index: Path to RAG index
+        rag_top_k: Number of RAG results to retrieve
+        path: Path being analyzed
+        
+    Returns:
+        RAG context string
+    """
+    if not rag_context:
+        return ""
+    
+    rag_query = f"Analyze code in {path}"
+    if check_rag_available(rag_index):
+        console.print(f"[dim]Retrieving RAG context...[/dim]")
+        rag_retrieved_context = get_rag_context(rag_query, rag_index, rag_top_k)
+        if rag_retrieved_context:
+            console.print(f"[dim]Found {rag_top_k} relevant documents[/dim]\n")
+            return rag_retrieved_context
+        else:
+            console.print(f"[yellow]No relevant documentation found[/yellow]\n")
+    else:
+        console.print(f"[yellow]RAG index not found. Run 'ai-multitool rag index <path>' to create an index.[/yellow]\n")
+    
+    return ""
+
+
+def build_analysis_prompt(context_str: str, content: str, rag_retrieved_context: str, context: bool) -> str:
+    """Build the final analysis prompt.
+    
+    Args:
+        context_str: Context string
+        content: Code content
+        rag_retrieved_context: RAG context
+        context: Whether smart context was used
+        
+    Returns:
+        Final prompt string
+    """
+    if context:
+        rag_section = ""
+        if rag_retrieved_context:
+            rag_section = f"\n\nRelevant Documentation:\n{rag_retrieved_context}\n"
+        
+        return f"""Analyze the following code with the provided context:
+
+{context_str}
+{rag_section}
+Code Content:
+```python
+{content[:10000]}
+```
+
+Please provide:
+1. A summary of what this code does
+2. Any potential issues or improvements
+3. Best practices that could be applied
+"""
+    else:
+        prompt = context_str
+        if rag_retrieved_context:
+            prompt = f"""{context_str}
+
+Relevant Documentation:
+{rag_retrieved_context}
+
+Please analyze the code considering the documentation above."""
+        return prompt
+
+
+async def perform_ai_analysis(client, prompt: str, metrics_collector, provider: str, model: str) -> Message:
+    """Perform AI analysis with metrics tracking.
+    
+    Args:
+        client: LLM client
+        prompt: Analysis prompt
+        metrics_collector: Metrics collector
+        provider: AI provider
+        model: AI model
+        
+    Returns:
+        AI response message
+    """
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Analyzing...", total=None)
+
+        with MetricsContext(metrics_collector, provider, model, "analyze") as metrics_ctx:
+            response = await client.chat([Message(role=MessageRole.USER, content=prompt)])
+            metrics_ctx.tokens_used = response.tokens_used
+            metrics_ctx.cached = response.cached
+    
+    return response
+
+
 @app.command()
 def analyze(
     path: str = typer.Argument(..., help="File or directory to analyze"),
@@ -184,13 +488,7 @@ def analyze(
     from pathlib import Path
 
     settings = get_settings()
-    provider = provider or "anthropic"
-    model = model or settings.default_model
-    api_key = settings.get_anthropic_key() if provider == "anthropic" else settings.get_openai_key()
-
-    if not api_key and not structure:
-        console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env, or use 'ai-multitool keys set'[/red]")
-        raise typer.Exit(1)
+    provider, model, api_key = validate_analyze_inputs(provider, model, structure, settings)
 
     # Get helpers
     parser = get_parser()
@@ -208,7 +506,7 @@ def analyze(
             if not path_obj.exists():
                 raise FileOperationError(f"Path not found: {path}", path, suggestion="Check if the file/directory path is correct")
 
-            # Build smart context
+            # Build context
             if context:
                 analysis_context = context_builder.build_context(
                     path,
@@ -218,203 +516,31 @@ def analyze(
                     max_context_length=8000
                 )
                 
-                if analysis_context.git_context and analysis_context.git_context.is_repo:
-                    console.print(f"[dim]Git: {analysis_context.git_context.branch} | {analysis_context.git_context.status}[/dim]")
-                
-                if analysis_context.code_structure:
-                    console.print(f"[dim]Language: {analysis_context.code_structure.language}[/dim]")
-                    console.print(f"[dim]Functions: {len(analysis_context.code_structure.functions)}[/dim]")
-                    console.print(f"[dim]Classes: {len(analysis_context.code_structure.classes)}[/dim]")
-                    console.print(f"[dim]Complexity: {analysis_context.code_structure.complexity_score}[/dim]\n")
-                
-                if structure:
-                    # Show context only
-                    console.print(Panel(analysis_context.context_string, title="Analysis Context"))
+                if display_analysis_context(analysis_context, structure, git_helper, path_obj):
                     return
                 
                 context_str = analysis_context.context_string
+                content = ""  # Will be read below
             else:
-                # Use legacy approach
-                git_context_str = ""
-                if git:
-                    git_context = git_helper.get_context(str(path_obj.absolute()) if path_obj.is_file() else str(path_obj.absolute()))
-                    git_context_str = git_helper.context_to_string(git_context)
-                    if git_context.is_repo:
-                        console.print(f"[dim]Git: {git_context.branch} | {git_context.status}[/dim]\n")
+                context_str, content, should_return = build_legacy_context(path_obj, parser, git_helper, git, structure)
+                if should_return:
+                    return
 
-                # Parse code structure
-                if path_obj.is_file():
-                    structure_obj = parser.parse_file(path)
-                    if not structure_obj:
-                        console.print(f"[yellow]Could not parse file: {path}[/yellow]")
-                        return
-                    
-                    console.print(f"[dim]Language: {structure_obj.language}[/dim]")
-                    console.print(f"[dim]Functions: {len(structure_obj.functions)}[/dim]")
-                    console.print(f"[dim]Classes: {len(structure_obj.classes)}[/dim]")
-                    console.print(f"[dim]Complexity: {structure_obj.complexity_score}[/dim]\n")
-                    
-                    if structure:
-                        # Show structure only
-                        console.print(Panel(parser.structure_to_context(structure_obj), title="Code Structure"))
-                        if git and git_context.is_repo:
-                            console.print(Panel(git_context_str, title="Git Context"))
-                        return
-                    
-                    content = read_file(path)
-                    file_info = f"File: {path_obj.name} ({len(content)} chars)"
-                    structure_context = parser.structure_to_context(structure_obj)
-                    
-                elif path_obj.is_dir():
-                    structures = parser.parse_directory(path, max_files=50)
-                    if not structures:
-                        console.print("[yellow]No code files found in directory[/yellow]")
-                        return
-                    
-                    summary = parser.get_summary(structures)
-                    console.print(f"[dim]{summary}[/dim]\n")
-                    
-                    if structure:
-                        # Show structures only
-                        for s in structures[:10]:
-                            console.print(Panel(parser.structure_to_context(s), title=f"{s.file_path}"))
-                        if len(structures) > 10:
-                            console.print(f"[dim]... and {len(structures) - 10} more files[/dim]")
-                        if git and git_context.is_repo:
-                            console.print(Panel(git_context_str, title="Git Context"))
-                        return
-                    
-                    content = ""
-                    for file_path in [s.file_path for s in structures[:10]]:
-                        try:
-                            file_content = read_file(file_path)
-                            content += f"\n\n# File: {file_path}\n{file_content}"
-                        except Exception as e:
-                            console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
+            # Read and sanitize content
+            content = read_and_sanitize_content(path_obj, parser, sanitizer, sanitize)
 
-                    file_info = f"Directory: {len(structures)} files analyzed"
-                    structure_context = summary
-                else:
-                    console.print(f"[red]Error: Not a file or directory: {path}[/red]")
-                    raise typer.Exit(1)
+            # Get RAG context
+            rag_retrieved_context = get_rag_context_for_analysis(rag_context, rag_index, rag_top_k, path)
 
-                # Build prompt
-                prompt_parts = [f"Analyze the following code:\n\n{file_info}"]
-                if git_context_str:
-                    prompt_parts.append(f"\n{git_context_str}")
-                prompt_parts.extend([
-                    f"\nCode Structure:\n{structure_context}",
-                    f"\n```python\n{content[:10000]}\n```",
-                    "\nPlease provide:",
-                    "1. A summary of what this code does",
-                    "2. Any potential issues or improvements",
-                    "3. Best practices that could be applied",
-                ])
-                context_str = "\n".join(prompt_parts)
+            # Build prompt
+            prompt = build_analysis_prompt(context_str, content, rag_retrieved_context, context)
 
-            # Read content for AI analysis
-            if path_obj.is_file():
-                content = read_file(path)
-                
-                # Sanitize content if enabled
-                if sanitize:
-                    result = sanitizer.sanitize(content, path)
-                    if result.issues_found:
-                        console.print(f"[yellow]Security issues found: {', '.join(result.issues_found)}[/yellow]")
-                    if result.warnings:
-                        console.print(f"[dim]Warnings: {', '.join(result.warnings)}[/dim]")
-                    content = result.sanitized_content
-            else:
-                structures = parser.parse_directory(path, max_files=10)
-                content = ""
-                for file_path in [s.file_path for s in structures[:10]]:
-                    try:
-                        file_content = read_file(file_path)
-                        
-                        # Check file safety
-                        is_safe, warnings = sanitizer.check_file_safety(file_path)
-                        if not is_safe:
-                            console.print(f"[yellow]Skipping potentially unsafe file: {file_path}[/yellow]")
-                            console.print(f"[dim]Reason: {warnings[0]}[/dim]")
-                            continue
-                        
-                        # Sanitize content if enabled
-                        if sanitize:
-                            result = sanitizer.sanitize(file_content, file_path)
-                            if result.issues_found:
-                                console.print(f"[yellow]Security issues in {Path(file_path).name}: {', '.join(result.issues_found)}[/yellow]")
-                            file_content = result.sanitized_content
-                        
-                        content += f"\n\n# File: {file_path}\n{file_content}"
-                    except Exception as e:
-                        console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
-
-            # Get RAG context if enabled
-            rag_retrieved_context = ""
-            if rag_context:
-                # Build a query from the path for RAG
-                rag_query = f"Analyze code in {path}"
-                if check_rag_available(rag_index):
-                    console.print(f"[dim]Retrieving RAG context...[/dim]")
-                    rag_retrieved_context = get_rag_context(rag_query, rag_index, rag_top_k)
-                    if rag_retrieved_context:
-                        console.print(f"[dim]Found {rag_top_k} relevant documents[/dim]\n")
-                    else:
-                        console.print(f"[yellow]No relevant documentation found[/yellow]\n")
-                else:
-                    console.print(f"[yellow]RAG index not found. Run 'ai-multitool rag index <path>' to create an index.[/yellow]\n")
-
-            # Build final prompt with smart context
-            if context:
-                # Build prompt with RAG context if available
-                rag_section = ""
-                if rag_retrieved_context:
-                    rag_section = f"\n\nRelevant Documentation:\n{rag_retrieved_context}\n"
-                
-                prompt = f"""Analyze the following code with the provided context:
-
-{context_str}
-{rag_section}
-Code Content:
-```python
-{content[:10000]}
-```
-
-Please provide:
-1. A summary of what this code does
-2. Any potential issues or improvements
-3. Best practices that could be applied
-"""
-            else:
-                prompt = context_str
-                if rag_retrieved_context:
-                    prompt = f"""{context_str}
-
-Relevant Documentation:
-{rag_retrieved_context}
-
-Please analyze the code considering the documentation above."""
-
-            # Create client
+            # Create client and perform analysis
             client = ClientFactory.create_client(provider, api_key, model)
-
-            # Get metrics collector
             metrics_collector = get_metrics_collector()
+            response = await perform_ai_analysis(client, prompt, metrics_collector, provider, model)
 
-            # Make API call
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                console=console,
-            ) as progress:
-                task = progress.add_task("Analyzing...", total=None)
-
-                with MetricsContext(metrics_collector, provider, model, "analyze") as metrics_ctx:
-                    response = await client.chat([Message(role=MessageRole.USER, content=prompt)])
-                    metrics_ctx.tokens_used = response.tokens_used
-                    metrics_ctx.cached = response.cached
-
-            # Display analysis
+            # Display results
             console.print(Panel(response.content, title="AI Analysis"))
             console.print(
                 f"[dim]Tokens: {response.tokens_used} | "
@@ -731,12 +857,15 @@ def rag_index(
     chunk_size: int = typer.Option(1000, help="Chunk size in characters"),
     chunk_overlap: int = typer.Option(200, help="Chunk overlap in characters"),
     provider: str = typer.Option("openai", help="Embedding provider (openai)"),
+    max_files: int = typer.Option(1000, help="Maximum number of files to index"),
+    max_size_mb: int = typer.Option(100, help="Maximum total size in MB"),
 ):
-    """Index documents for RAG search"""
+    """Index documents for RAG search with memory limits"""
     from pathlib import Path
     from ai_multitool.rag.embeddings import OpenAIEmbeddings
     from ai_multitool.rag.chunkers import RecursiveCharacterChunker
     from ai_multitool.rag.indexer import DocumentIndexer
+    from ai_multitool.utils.memory_monitor import get_safe_max_files_based_on_memory
     
     settings = get_settings()
     
@@ -760,7 +889,14 @@ def rag_index(
     
     try:
         console.print(Panel(f"[bold cyan]Indexing: {path}[/bold cyan]"))
-        console.print(f"[dim]Pattern: {pattern} | Chunk size: {chunk_size} | Overlap: {chunk_overlap}[/dim]\n")
+        console.print(f"[dim]Pattern: {pattern} | Chunk size: {chunk_size} | Overlap: {chunk_overlap}[/dim]")
+        
+        # Calculate safe memory limits
+        safe_max_files = get_safe_max_files_based_on_memory()
+        effective_max_files = min(max_files, safe_max_files)
+        max_total_size = max_size_mb * 1024 * 1024  # Convert MB to bytes
+        
+        console.print(f"[dim]Memory limits: max_files={effective_max_files}, max_size={max_size_mb}MB[/dim]\n")
         
         path_obj = Path(path)
         if path_obj.is_file():
@@ -775,8 +911,14 @@ def rag_index(
             indexer.add_document(document)
             console.print(f"[bold green]✓[/bold green] Indexed 1 document")
         elif path_obj.is_dir():
-            # Index directory
-            count = indexer.index_directory(str(path_obj), pattern=pattern)
+            # Index directory with memory limits
+            count = indexer.index_directory(
+                str(path_obj), 
+                pattern=pattern,
+                max_files=effective_max_files,
+                max_total_size=max_total_size,
+                batch_size=50
+            )
             console.print(f"[bold green]✓[/bold green] Indexed {count} documents")
         else:
             console.print(f"[red]Error: Not a file or directory: {path}[/red]")
