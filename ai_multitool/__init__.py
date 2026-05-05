@@ -93,6 +93,15 @@ from .adapters import (
     create_devin_adapter,
 )
 
+# Advanced tools
+from .advanced import (
+    AdvancedTool,
+    ToolResult,
+    ToolPipeline,
+    AdvancedToolConfig,
+    AdvancedSettings,
+)
+
 __all__ = [
     # Version
     "__version__",
@@ -175,4 +184,11 @@ __all__ = [
     "create_claude_code_adapter",
     "DevinAdapter",
     "create_devin_adapter",
+
+    # Advanced tools
+    "AdvancedTool",
+    "ToolResult",
+    "ToolPipeline",
+    "AdvancedToolConfig",
+    "AdvancedSettings",
 ]
