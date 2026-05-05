@@ -12,6 +12,7 @@ from ai_multitool.config.settings import get_settings
 from ai_multitool.utils.file_utils import read_file, read_directory, is_code_file
 from ai_multitool.parsers.code_parser import get_parser
 from ai_multitool.utils.git_utils import get_git_helper
+from ai_multitool.utils.context_builder import get_context_builder
 
 app = typer.Typer(
     name="ai-multitool",
@@ -102,6 +103,7 @@ def analyze(
     provider: str = typer.Option(None, help="AI provider (anthropic or openai)"),
     structure: bool = typer.Option(False, help="Show code structure without AI analysis"),
     git: bool = typer.Option(True, help="Include git repository context"),
+    context: bool = typer.Option(True, help="Use smart context builder for enhanced analysis"),
 ):
     """Analyze code with AI"""
     from pathlib import Path
@@ -115,9 +117,10 @@ def analyze(
         console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env[/red]")
         raise typer.Exit(1)
 
-    # Get code parser and git helper
+    # Get helpers
     parser = get_parser()
     git_helper = get_git_helper()
+    context_builder = get_context_builder()
 
     async def run_analyze():
         console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
@@ -129,60 +132,115 @@ def analyze(
             console.print(f"[red]Error: Path not found: {path}[/red]")
             raise typer.Exit(1)
 
-        # Get git context
-        git_context_str = ""
-        if git:
-            git_context = git_helper.get_context(str(path_obj.absolute()) if path_obj.is_file() else str(path_obj.absolute()))
-            git_context_str = git_helper.context_to_string(git_context)
-            if git_context.is_repo:
-                console.print(f"[dim]Git: {git_context.branch} | {git_context.status}[/dim]\n")
+        # Build smart context
+        if context:
+            analysis_context = context_builder.build_context(
+                path,
+                include_git=git,
+                include_related=True,
+                max_related=5,
+                max_context_length=8000
+            )
+            
+            if analysis_context.git_context and analysis_context.git_context.is_repo:
+                console.print(f"[dim]Git: {analysis_context.git_context.branch} | {analysis_context.git_context.status}[/dim]")
+            
+            if analysis_context.code_structure:
+                console.print(f"[dim]Language: {analysis_context.code_structure.language}[/dim]")
+                console.print(f"[dim]Functions: {len(analysis_context.code_structure.functions)}[/dim]")
+                console.print(f"[dim]Classes: {len(analysis_context.code_structure.classes)}[/dim]")
+                console.print(f"[dim]Complexity: {analysis_context.code_structure.complexity_score}[/dim]\n")
+            
+            if structure:
+                # Show context only
+                console.print(Panel(analysis_context.context_string, title="Analysis Context"))
+                return
+            
+            context_str = analysis_context.context_string
+        else:
+            # Use legacy approach
+            git_context_str = ""
+            if git:
+                git_context = git_helper.get_context(str(path_obj.absolute()) if path_obj.is_file() else str(path_obj.absolute()))
+                git_context_str = git_helper.context_to_string(git_context)
+                if git_context.is_repo:
+                    console.print(f"[dim]Git: {git_context.branch} | {git_context.status}[/dim]\n")
 
-        # Parse code structure
+            # Parse code structure
+            if path_obj.is_file():
+                structure_obj = parser.parse_file(path)
+                if not structure_obj:
+                    console.print(f"[yellow]Could not parse file: {path}[/yellow]")
+                    return
+                
+                console.print(f"[dim]Language: {structure_obj.language}[/dim]")
+                console.print(f"[dim]Functions: {len(structure_obj.functions)}[/dim]")
+                console.print(f"[dim]Classes: {len(structure_obj.classes)}[/dim]")
+                console.print(f"[dim]Complexity: {structure_obj.complexity_score}[/dim]\n")
+                
+                if structure:
+                    # Show structure only
+                    console.print(Panel(parser.structure_to_context(structure_obj), title="Code Structure"))
+                    if git and git_context.is_repo:
+                        console.print(Panel(git_context_str, title="Git Context"))
+                    return
+                
+                content = read_file(path)
+                file_info = f"File: {path_obj.name} ({len(content)} chars)"
+                structure_context = parser.structure_to_context(structure_obj)
+                
+            elif path_obj.is_dir():
+                structures = parser.parse_directory(path, max_files=50)
+                if not structures:
+                    console.print("[yellow]No code files found in directory[/yellow]")
+                    return
+                
+                summary = parser.get_summary(structures)
+                console.print(f"[dim]{summary}[/dim]\n")
+                
+                if structure:
+                    # Show structures only
+                    for s in structures[:10]:
+                        console.print(Panel(parser.structure_to_context(s), title=f"{s.file_path}"))
+                    if len(structures) > 10:
+                        console.print(f"[dim]... and {len(structures) - 10} more files[/dim]")
+                    if git and git_context.is_repo:
+                        console.print(Panel(git_context_str, title="Git Context"))
+                    return
+                
+                content = ""
+                for file_path in [s.file_path for s in structures[:10]]:
+                    try:
+                        file_content = read_file(file_path)
+                        content += f"\n\n# File: {file_path}\n{file_content}"
+                    except Exception as e:
+                        console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
+
+                file_info = f"Directory: {len(structures)} files analyzed"
+                structure_context = summary
+            else:
+                console.print(f"[red]Error: Not a file or directory: {path}[/red]")
+                raise typer.Exit(1)
+
+            # Build prompt
+            prompt_parts = [f"Analyze the following code:\n\n{file_info}"]
+            if git_context_str:
+                prompt_parts.append(f"\n{git_context_str}")
+            prompt_parts.extend([
+                f"\nCode Structure:\n{structure_context}",
+                f"\n```python\n{content[:10000]}\n```",
+                "\nPlease provide:",
+                "1. A summary of what this code does",
+                "2. Any potential issues or improvements",
+                "3. Best practices that could be applied",
+            ])
+            context_str = "\n".join(prompt_parts)
+
+        # Read content for AI analysis
         if path_obj.is_file():
-            structure_obj = parser.parse_file(path)
-            if not structure_obj:
-                console.print(f"[yellow]Could not parse file: {path}[/yellow]")
-                return
-            
-            structures = [structure_obj]
-            console.print(f"[dim]Language: {structure_obj.language}[/dim]")
-            console.print(f"[dim]Functions: {len(structure_obj.functions)}[/dim]")
-            console.print(f"[dim]Classes: {len(structure_obj.classes)}[/dim]")
-            console.print(f"[dim]Complexity: {structure_obj.complexity_score}[/dim]\n")
-            
-            if structure:
-                # Show structure only
-                console.print(Panel(parser.structure_to_context(structure_obj), title="Code Structure"))
-                if git and git_context.is_repo:
-                    console.print(Panel(git_context_str, title="Git Context"))
-                return
-            
-            # Read actual content for AI analysis
             content = read_file(path)
-            file_info = f"File: {path_obj.name} ({len(content)} chars)"
-            structure_context = parser.structure_to_context(structure_obj)
-            
-        elif path_obj.is_dir():
-            # For directories, parse all code files
-            structures = parser.parse_directory(path, max_files=50)
-            if not structures:
-                console.print("[yellow]No code files found in directory[/yellow]")
-                return
-            
-            summary = parser.get_summary(structures)
-            console.print(f"[dim]{summary}[/dim]\n")
-            
-            if structure:
-                # Show structures only
-                for s in structures[:10]:
-                    console.print(Panel(parser.structure_to_context(s), title=f"{s.file_path}"))
-                if len(structures) > 10:
-                    console.print(f"[dim]... and {len(structures) - 10} more files[/dim]")
-                if git and git_context.is_repo:
-                    console.print(Panel(git_context_str, title="Git Context"))
-                return
-            
-            # Read actual content for AI analysis
+        else:
+            structures = parser.parse_directory(path, max_files=10)
             content = ""
             for file_path in [s.file_path for s in structures[:10]]:
                 try:
@@ -191,33 +249,27 @@ def analyze(
                 except Exception as e:
                     console.print(f"[yellow]Warning: Could not read {file_path}: {e}[/yellow]")
 
-            file_info = f"Directory: {len(structures)} files analyzed"
-            structure_context = summary
+        # Build final prompt with smart context
+        if context:
+            prompt = f"""Analyze the following code with the provided context:
+
+{context_str}
+
+Code Content:
+```python
+{content[:10000]}
+```
+
+Please provide:
+1. A summary of what this code does
+2. Any potential issues or improvements
+3. Best practices that could be applied
+"""
         else:
-            console.print(f"[red]Error: Not a file or directory: {path}[/red]")
-            raise typer.Exit(1)
+            prompt = context_str
 
         # Create client
         client = ClientFactory.create_client(provider, api_key, model)
-
-        # Build prompt with structure and git context
-        prompt_parts = [
-            f"Analyze the following code:\n\n{file_info}",
-        ]
-        
-        if git_context_str:
-            prompt_parts.append(f"\n{git_context_str}")
-        
-        prompt_parts.extend([
-            f"\nCode Structure:\n{structure_context}",
-            f"\n```python\n{content[:10000]}\n```",
-            "\nPlease provide:",
-            "1. A summary of what this code does",
-            "2. Any potential issues or improvements",
-            "3. Best practices that could be applied",
-        ])
-        
-        prompt = "\n".join(prompt_parts)
 
         # Make API call
         with Progress(

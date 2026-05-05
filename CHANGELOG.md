@@ -23,12 +23,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Git context includes branch, commit info, status, modified files, and recent commits
 - --git flag to control git context inclusion in analyze command
 - git_utils.py module for git operations (branch, commits, status, diff, file history)
+- Smart context builder for enhanced code analysis
+- context_builder.py module for intelligent context aggregation
+- File statistics (lines, chars, size) in analysis context
+- Related file detection for better context
+- Dependency/import extraction from code
+- --context flag to enable/disable smart context builder (default: True)
+- Comprehensive analysis context including structure, git, stats, and related files
 
 ### Changed
 - Updated README with current working features
 - Added usage examples for analyze command
 - Enhanced analyze command to include code structure context in AI prompts
 - Enhanced analyze command to include git repository context in AI prompts
+- Enhanced analyze command to use smart context builder for richer AI context
 
 ## [0.1.0] - 2025-05-05
 
