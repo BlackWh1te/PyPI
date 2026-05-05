@@ -5,6 +5,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
+from ai_multitool.core.exceptions import (
+    ContextError,
+    FileNotFoundError as CustomFileNotFoundError,
+    FileOperationError,
+    ValidationError,
+)
 from ai_multitool.parsers.code_parser import CodeParser, CodeStructure, get_parser
 from ai_multitool.utils.git_utils import GitHelper, GitContext, get_git_helper
 from ai_multitool.utils.file_utils import is_code_file
@@ -39,32 +45,58 @@ class SmartContextBuilder:
         max_context_length: int = 8000
     ) -> AnalysisContext:
         """Build comprehensive analysis context for a file or directory."""
+        if not path or not path.strip():
+            raise ValidationError("Path cannot be empty", field="path")
+        
+        if max_related < 1 or max_related > 50:
+            raise ValidationError("max_related must be between 1 and 50", field="max_related")
+        
+        if max_context_length < 100 or max_context_length > 50000:
+            raise ValidationError("max_context_length must be between 100 and 50000", field="max_context_length")
+        
         path_obj = Path(path)
         
-        if not path_obj.exists():
-            return AnalysisContext(
-                file_path=path,
-                code_structure=None,
-                git_context=None,
-                related_files=[],
-                dependencies=[],
-                file_stats={},
-                context_string=f"Error: Path not found: {path}"
+        try:
+            if not path_obj.exists():
+                raise CustomFileNotFoundError(path, suggestion="Check if the path is correct")
+        except (ContextError, ValidationError):
+            raise
+        except Exception as e:
+            raise ContextError(
+                f"Failed to access path",
+                path=path,
+                details={"error_type": type(e).__name__, "error": str(e)}
             )
         
         # Get code structure
-        if path_obj.is_file():
-            code_structure = self.parser.parse_file(path)
-            related_files = self._find_related_files(path, max_related) if include_related else []
-            dependencies = self._extract_dependencies(path)
-        else:
-            structures = self.parser.parse_directory(path, max_files=50)
-            code_structure = None  # Directory doesn't have single structure
-            related_files = [s.file_path for s in structures[:max_related]] if include_related else []
-            dependencies = []
+        code_structure = None
+        related_files = []
+        dependencies = []
+        
+        try:
+            if path_obj.is_file():
+                code_structure = self.parser.parse_file(path)
+                related_files = self._find_related_files(path, max_related) if include_related else []
+                dependencies = self._extract_dependencies(path)
+            else:
+                structures = self.parser.parse_directory(path, max_files=50)
+                code_structure = None  # Directory doesn't have single structure
+                related_files = [s.file_path for s in structures[:max_related]] if include_related else []
+                dependencies = []
+        except (ContextError, ValidationError):
+            raise
+        except Exception as e:
+            # Continue with partial context if code parsing fails
+            pass
         
         # Get git context
-        git_context = self.git_helper.get_context(str(path_obj.absolute())) if include_git else None
+        git_context = None
+        try:
+            if include_git and self.git_helper:
+                git_context = self.git_helper.get_context(str(path_obj.absolute()))
+        except Exception:
+            # Continue without git context if it fails
+            pass
         
         # Get file stats
         file_stats = self._get_file_stats(path)
@@ -250,7 +282,22 @@ class SmartContextBuilder:
     
     def build_directory_summary(self, directory: str, max_files: int = 20) -> str:
         """Build a summary of a directory's code structure."""
-        structures = self.parser.parse_directory(directory, max_files)
+        if not directory or not directory.strip():
+            raise ValidationError("Directory path cannot be empty", field="directory")
+        
+        if max_files < 1 or max_files > 200:
+            raise ValidationError("max_files must be between 1 and 200", field="max_files")
+        
+        try:
+            structures = self.parser.parse_directory(directory, max_files)
+        except (ContextError, ValidationError):
+            raise
+        except Exception as e:
+            raise ContextError(
+                f"Failed to parse directory",
+                path=directory,
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
         
         if not structures:
             return "No code files found in directory."

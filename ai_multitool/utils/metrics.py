@@ -8,6 +8,8 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 from collections import defaultdict
 
+from ai_multitool.core.exceptions import MetricsError, ValidationError
+
 
 @dataclass
 class APICallMetrics:
@@ -62,17 +64,41 @@ class MetricsCollector:
                 with open(self.metrics_file, 'r') as f:
                     data = json.load(f)
                     self.metrics = [APICallMetrics(**m) for m in data]
+            except json.JSONDecodeError as e:
+                raise MetricsError(
+                    f"Metrics file is corrupted or invalid JSON",
+                    file_path=str(self.metrics_file),
+                    details={"error": str(e)},
+                    suggestion="Delete the metrics file and it will be recreated"
+                )
             except Exception as e:
-                print(f"Warning: Could not load metrics file: {e}")
-                self.metrics = []
+                raise MetricsError(
+                    f"Failed to load metrics file",
+                    file_path=str(self.metrics_file),
+                    details={"error_type": type(e).__name__, "error": str(e)}
+                )
     
     def _save_metrics(self):
         """Save metrics to file."""
         try:
+            # Ensure parent directory exists
+            self.metrics_file.parent.mkdir(parents=True, exist_ok=True)
+            
             with open(self.metrics_file, 'w') as f:
                 json.dump([asdict(m) for m in self.metrics], f, indent=2)
+        except PermissionError as e:
+            raise MetricsError(
+                f"Permission denied when saving metrics",
+                file_path=str(self.metrics_file),
+                details={"error": str(e)},
+                suggestion="Check write permissions for the metrics directory"
+            )
         except Exception as e:
-            print(f"Warning: Could not save metrics file: {e}")
+            raise MetricsError(
+                f"Failed to save metrics file",
+                file_path=str(self.metrics_file),
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
     
     def record_call(
         self,
@@ -86,28 +112,61 @@ class MetricsCollector:
         error_message: Optional[str] = None
     ):
         """Record an API call."""
-        metric = APICallMetrics(
-            timestamp=datetime.now().isoformat(),
-            provider=provider,
-            model=model,
-            command=command,
-            tokens_used=tokens_used,
-            latency_ms=latency_ms,
-            cached=cached,
-            success=success,
-            error_message=error_message
-        )
-        self.metrics.append(metric)
-        self._save_metrics()
+        if not provider or not provider.strip():
+            raise ValidationError("Provider cannot be empty", field="provider")
+        
+        if not model or not model.strip():
+            raise ValidationError("Model cannot be empty", field="model")
+        
+        if not command or not command.strip():
+            raise ValidationError("Command cannot be empty", field="command")
+        
+        if tokens_used < 0:
+            raise ValidationError("Tokens used must be non-negative", field="tokens_used")
+        
+        if latency_ms < 0:
+            raise ValidationError("Latency must be non-negative", field="latency_ms")
+        
+        try:
+            metric = APICallMetrics(
+                timestamp=datetime.now().isoformat(),
+                provider=provider,
+                model=model,
+                command=command,
+                tokens_used=tokens_used,
+                latency_ms=latency_ms,
+                cached=cached,
+                success=success,
+                error_message=error_message
+            )
+            self.metrics.append(metric)
+            self._save_metrics()
+        except (MetricsError, ValidationError):
+            raise
+        except Exception as e:
+            raise MetricsError(
+                f"Failed to record API call",
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
     
     def get_stats(self, days: int = 30) -> UsageStats:
         """Get aggregated usage statistics."""
-        # Filter metrics by date range
-        cutoff = datetime.now().timestamp() - (days * 24 * 60 * 60)
-        recent_metrics = [
-            m for m in self.metrics
-            if datetime.fromisoformat(m.timestamp).timestamp() > cutoff
-        ]
+        if days < 1 or days > 365:
+            raise ValidationError("Days must be between 1 and 365", field="days")
+        
+        try:
+            # Filter metrics by date range
+            cutoff = datetime.now().timestamp() - (days * 24 * 60 * 60)
+            recent_metrics = [
+                m for m in self.metrics
+                if datetime.fromisoformat(m.timestamp).timestamp() > cutoff
+            ]
+        except ValueError as e:
+            raise MetricsError(
+                f"Failed to parse timestamp in metrics",
+                details={"error": str(e)},
+                suggestion="Metrics file may be corrupted"
+            )
         
         if not recent_metrics:
             return UsageStats(
@@ -167,14 +226,31 @@ class MetricsCollector:
     
     def export_metrics(self, output_file: str):
         """Export metrics to a file."""
+        if not output_file or not output_file.strip():
+            raise ValidationError("Output file path cannot be empty", field="output_file")
+        
         output_path = Path(output_file)
+        
         try:
+            # Ensure parent directory exists
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
             with open(output_path, 'w') as f:
                 json.dump([asdict(m) for m in self.metrics], f, indent=2)
             return True
+        except PermissionError as e:
+            raise MetricsError(
+                f"Permission denied when exporting metrics",
+                file_path=str(output_path),
+                details={"error": str(e)},
+                suggestion="Check write permissions for the output directory"
+            )
         except Exception as e:
-            print(f"Error exporting metrics: {e}")
-            return False
+            raise MetricsError(
+                f"Failed to export metrics",
+                file_path=str(output_path),
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
 
 
 class MetricsContext:

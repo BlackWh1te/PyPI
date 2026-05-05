@@ -5,6 +5,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
+from ai_multitool.core.exceptions import (
+    CodeParsingError,
+    FileNotFoundError as CustomFileNotFoundError,
+    FileOperationError,
+    ValidationError,
+)
+
 try:
     import tree_sitter
     from tree_sitter import Language, Parser
@@ -88,22 +95,48 @@ class CodeParser:
     
     def parse_file(self, file_path: str) -> Optional[CodeStructure]:
         """Parse a code file and extract its structure."""
-        if not TREE_SITTER_AVAILABLE:
-            return self._fallback_parse(file_path)
+        if not file_path or not file_path.strip():
+            raise ValidationError("File path cannot be empty", field="file_path")
+        
+        path = Path(file_path)
+        
+        try:
+            if not path.exists():
+                raise CustomFileNotFoundError(file_path, suggestion="Check if the file path is correct")
+            
+            if not path.is_file():
+                raise FileOperationError(f"Not a file: {file_path}", file_path, suggestion="Provide a valid file path")
+        except (CodeParsingError, ValidationError):
+            raise
+        except Exception as e:
+            raise CodeParsingError(
+                f"Failed to access file",
+                file_path=file_path,
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
         
         language = self.detect_language(file_path)
         if not language:
-            return None
+            raise CodeParsingError(
+                f"Unsupported file type",
+                file_path=file_path,
+                suggestion="Supported languages: " + ", ".join(set(self.LANGUAGE_MAP.values()))
+            )
         
         try:
-            content = Path(file_path).read_text(encoding='utf-8', errors='ignore')
+            content = path.read_text(encoding='utf-8', errors='ignore')
             
             # For now, use regex-based parsing as fallback
             # Full tree-sitter integration requires language-specific grammars
             return self._parse_with_regex(content, language, file_path)
+        except (CodeParsingError, ValidationError, FileOperationError):
+            raise
         except Exception as e:
-            print(f"Error parsing {file_path}: {e}")
-            return None
+            raise CodeParsingError(
+                f"Failed to parse file",
+                file_path=file_path,
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
     
     def _fallback_parse(self, file_path: str) -> Optional[CodeStructure]:
         """Fallback parsing using regex when tree-sitter is not available."""
@@ -206,11 +239,29 @@ class CodeParser:
     
     def parse_directory(self, directory: str, max_files: int = 50) -> List[CodeStructure]:
         """Parse all code files in a directory."""
+        if not directory or not directory.strip():
+            raise ValidationError("Directory path cannot be empty", field="directory")
+        
+        if max_files < 1 or max_files > 500:
+            raise ValidationError("max_files must be between 1 and 500", field="max_files")
+        
         structures = []
         directory = Path(directory)
         
-        if not directory.is_dir():
-            return structures
+        try:
+            if not directory.exists():
+                raise CustomFileNotFoundError(directory, suggestion="Check if the directory path is correct")
+            
+            if not directory.is_dir():
+                raise FileOperationError(f"Not a directory: {directory}", directory, suggestion="Provide a valid directory path")
+        except (CodeParsingError, ValidationError):
+            raise
+        except Exception as e:
+            raise CodeParsingError(
+                f"Failed to access directory",
+                file_path=directory,
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
         
         code_extensions = set(self.LANGUAGE_MAP.keys())
         
@@ -220,13 +271,17 @@ class CodeParser:
             
             if file_path.is_file() and file_path.suffix.lower() in code_extensions:
                 # Skip common non-code directories
-                if any(part.startswith('.') or part in ['node_modules', '__pycache__', 'venv', 'env']
+                if any(part.startswith('.') or part in ['node_modules', '__pycache__', 'venv', 'env', 'dist', 'build']
                        for part in file_path.parts):
                     continue
                 
-                structure = self.parse_file(str(file_path))
-                if structure:
-                    structures.append(structure)
+                try:
+                    structure = self.parse_file(str(file_path))
+                    if structure:
+                        structures.append(structure)
+                except (CodeParsingError, ValidationError):
+                    # Skip files that fail to parse
+                    continue
         
         return structures
     

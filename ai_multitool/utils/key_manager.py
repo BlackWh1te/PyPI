@@ -4,6 +4,8 @@ import os
 from typing import Optional
 from pathlib import Path
 
+from ai_multitool.core.exceptions import KeyringError, ValidationError
+
 try:
     import keyring
     KEYRING_AVAILABLE = True
@@ -31,38 +33,92 @@ class KeyManager:
     def set_key(self, key_id: str, value: str) -> bool:
         """Store an API key in the keyring."""
         if not self.available:
-            return False
+            raise KeyringError(
+                "Keyring library not available",
+                suggestion="Install keyring: pip install keyring"
+            )
+        
+        if not key_id or not key_id.strip():
+            raise ValidationError("Key ID cannot be empty", field="key_id")
+        
+        if not value or not value.strip():
+            raise ValidationError("Key value cannot be empty", field="value")
         
         try:
             keyring.set_password(self.SERVICE_NAME, key_id, value)
             return True
+        except keyring.errors.KeyringError as e:
+            raise KeyringError(
+                f"Failed to store key in keyring",
+                key_id=key_id,
+                details={"error_type": type(e).__name__, "error": str(e)},
+                suggestion="Check your system keyring configuration and permissions"
+            )
         except Exception as e:
-            print(f"Error storing key in keyring: {e}")
-            return False
+            raise KeyringError(
+                f"Unexpected error storing key",
+                key_id=key_id,
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
     
     def get_key(self, key_id: str) -> Optional[str]:
         """Retrieve an API key from the keyring."""
         if not self.available:
             return None
         
+        if not key_id or not key_id.strip():
+            raise ValidationError("Key ID cannot be empty", field="key_id")
+        
         try:
             value = keyring.get_password(self.SERVICE_NAME, key_id)
             return value
+        except keyring.errors.KeyringError as e:
+            # Key not found is not an error - return None
+            if "not found" in str(e).lower() or "no such" in str(e).lower():
+                return None
+            raise KeyringError(
+                f"Failed to retrieve key from keyring",
+                key_id=key_id,
+                details={"error_type": type(e).__name__, "error": str(e)},
+                suggestion="Check your system keyring configuration"
+            )
         except Exception as e:
-            print(f"Error retrieving key from keyring: {e}")
-            return None
+            raise KeyringError(
+                f"Unexpected error retrieving key",
+                key_id=key_id,
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
     
     def delete_key(self, key_id: str) -> bool:
         """Delete an API key from the keyring."""
         if not self.available:
-            return False
+            raise KeyringError(
+                "Keyring library not available",
+                suggestion="Install keyring: pip install keyring"
+            )
+        
+        if not key_id or not key_id.strip():
+            raise ValidationError("Key ID cannot be empty", field="key_id")
         
         try:
             keyring.delete_password(self.SERVICE_NAME, key_id)
             return True
+        except keyring.errors.KeyringError as e:
+            # Key not found is not an error - return False
+            if "not found" in str(e).lower() or "no such" in str(e).lower():
+                return False
+            raise KeyringError(
+                f"Failed to delete key from keyring",
+                key_id=key_id,
+                details={"error_type": type(e).__name__, "error": str(e)},
+                suggestion="Check your system keyring configuration"
+            )
         except Exception as e:
-            print(f"Error deleting key from keyring: {e}")
-            return False
+            raise KeyringError(
+                f"Unexpected error deleting key",
+                key_id=key_id,
+                details={"error_type": type(e).__name__, "error": str(e)}
+            )
     
     def list_keys(self) -> list:
         """List all stored key IDs."""

@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
+from ai_multitool.core.exceptions import GitError, ValidationError
+
 try:
     import git
     GIT_AVAILABLE = True
@@ -31,13 +33,33 @@ class GitHelper:
     
     def __init__(self, repo_path: str = None):
         """Initialize git helper for a repository."""
+        if not GIT_AVAILABLE:
+            raise GitError(
+                "Git library not installed",
+                suggestion="Install gitpython: pip install gitpython"
+            )
+        
         self.repo_path = repo_path or os.getcwd()
         self.repo = None
-        if GIT_AVAILABLE:
-            try:
-                self.repo = git.Repo(self.repo_path, search_parent_directories=True)
-            except Exception:
-                pass
+        
+        try:
+            if not os.path.exists(self.repo_path):
+                raise GitError(
+                    f"Repository path does not exist: {self.repo_path}",
+                    suggestion="Check if the path is correct"
+                )
+            
+            self.repo = git.Repo(self.repo_path, search_parent_directories=True)
+        except git.InvalidGitRepositoryError:
+            # Not a git repo - this is OK, just set repo to None
+            self.repo = None
+        except GitError:
+            raise
+        except Exception as e:
+            raise GitError(
+                f"Failed to initialize git repository",
+                details={"error_type": type(e).__name__, "error": str(e), "path": self.repo_path}
+            )
     
     def is_git_repo(self) -> bool:
         """Check if current directory is a git repository."""
@@ -49,6 +71,10 @@ class GitHelper:
             return None
         try:
             return self.repo.active_branch.name
+        except git.NoSuchPathError:
+            return None
+        except git.InvalidGitRepositoryError:
+            return None
         except Exception:
             return None
     
@@ -63,6 +89,8 @@ class GitHelper:
                 commit.message.strip(),
                 f"{commit.author.name} <{commit.author.email}>"
             )
+        except (git.NoSuchPathError, git.InvalidGitRepositoryError, ValueError):
+            return None, None, None
         except Exception:
             return None, None, None
     
@@ -86,6 +114,8 @@ class GitHelper:
             
             status = ", ".join(status_parts)
             return modified, untracked, status
+        except (git.NoSuchPathError, git.InvalidGitRepositoryError):
+            return [], [], "Not a git repository"
         except Exception:
             return [], [], "Error getting status"
     
@@ -93,6 +123,9 @@ class GitHelper:
         """Get recent commit history."""
         if not self.repo:
             return []
+        
+        if limit < 1 or limit > 100:
+            raise ValidationError("Limit must be between 1 and 100", field="limit")
         
         commits = []
         try:
@@ -103,6 +136,8 @@ class GitHelper:
                     'author': f"{commit.author.name}",
                     'date': commit.committed_datetime.strftime("%Y-%m-%d %H:%M"),
                 })
+        except (git.NoSuchPathError, git.InvalidGitRepositoryError):
+            return []
         except Exception:
             pass
         
@@ -113,6 +148,12 @@ class GitHelper:
         if not self.repo:
             return []
         
+        if not file_path or not file_path.strip():
+            raise ValidationError("File path cannot be empty", field="file_path")
+        
+        if limit < 1 or limit > 100:
+            raise ValidationError("Limit must be between 1 and 100", field="limit")
+        
         commits = []
         try:
             for commit in list(self.repo.iter_commits(paths=file_path, max_count=limit)):
@@ -122,6 +163,8 @@ class GitHelper:
                     'author': f"{commit.author.name}",
                     'date': commit.committed_datetime.strftime("%Y-%m-%d %H:%M"),
                 })
+        except (git.NoSuchPathError, git.InvalidGitRepositoryError):
+            return []
         except Exception:
             pass
         
@@ -144,6 +187,8 @@ class GitHelper:
                 diff_text += item.diff.decode('utf-8', errors='ignore')
             
             return diff_text
+        except (git.NoSuchPathError, git.InvalidGitRepositoryError):
+            return ""
         except Exception:
             return ""
     
@@ -223,6 +268,13 @@ class GitHelper:
         return result
 
 
-def get_git_helper(repo_path: str = None) -> GitHelper:
-    """Get a git helper instance."""
-    return GitHelper(repo_path)
+def get_git_helper(repo_path: str = None) -> Optional[GitHelper]:
+    """Get a git helper instance. Returns None if git is not available."""
+    if not GIT_AVAILABLE:
+        return None
+    
+    try:
+        return GitHelper(repo_path)
+    except GitError:
+        # Return None if not a git repo or other git error
+        return None
