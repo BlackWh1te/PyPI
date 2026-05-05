@@ -5,6 +5,58 @@ All notable changes to ai-multitool will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-05-05
+
+### Added
+- **26 New Advanced Tools**: Expanded from 34 to 60 tools across 30+ categories
+- **Performance Tools**: PerformanceProfiler for AI-powered performance profiling
+- **Database Tools**: SchemaAnalyzer for database schema optimization
+- **API Tools**: APIDesigner for RESTful API design with OpenAPI
+- **Cloud Tools**: DockerOptimizer for Docker optimization
+- **Logging Tools**: LogAnalyzer for log analysis and debugging
+- **ML Tools**: ModelOptimizer for ML model optimization
+- **DevOps Tools**: PipelineAnalyzer for CI/CD pipeline analysis
+- **Monitoring Tools**: AlertOptimizer for monitoring alert optimization
+- **Mobile Tools**: MobileAppAnalyzer for mobile app performance/UX
+- **Frontend Tools**: ComponentAnalyzer for frontend component analysis
+- **Crypto Tools**: CryptoKeyManager for cryptographic key management
+- **Network Tools**: NetworkProtocolAnalyzer for network protocol optimization
+- **Data Tools**: DataPipelineOptimizer for data pipeline optimization
+- **Web Tools**: WebScraper for web scraping with selector generation
+- **SEO Tools**: SEOOptimizer for SEO optimization
+- **Accessibility Tools**: AccessibilityAuditor for WCAG compliance auditing
+- **Backup Tools**: BackupStrategy for backup strategy design
+- **Analytics Tools**: AnalyticsReporter for analytics reporting and dashboards
+- **Automation Tools**: WorkflowDesigner for workflow automation design
+- **Compliance Tools**: ComplianceAuditor for GDPR/HIPAA/SOC2 compliance
+- **Infrastructure Tools**: InfrastructureProvisioner for cloud infrastructure provisioning
+- **Messaging Tools**: QueueAnalyzer for message queue analysis
+- **Storage Tools**: StorageOptimizer for storage tier selection and lifecycle
+- **Search Tools**: SearchAnalyzer for search schema design and query optimization
+- **Email Tools**: EmailAnalyzer for email content optimization and deliverability
+- **Legal Tools**: ContractAnalyzer for legal contract analysis and risk assessment
+- **IoT Tools**: IoTDeviceManager for IoT device management and security
+- **Token Budget Controls**: Comprehensive token consumption tracking and limits
+  - Max tokens per session: 100,000 (configurable)
+  - Max tokens per tool: 5,000 (configurable)
+  - Warning threshold: 80% of budget
+  - Budget exceeded action: warn/stop/continue (configurable)
+  - Response caching: 40-60% token reduction for repeated operations
+  - Prompt optimization: automatic compression and truncation
+  - Thread-safe budget checking for concurrent operations
+- **Prompt Optimizer**: New utility module for prompt compression and optimization
+- **Memory Fixes**: Fixed memory issues causing PC freezing with large directories
+- **File Limits**: Added file limits to directory indexing for better memory management
+- **Path Validation**: Enhanced security with path validation for file operations
+- **Cache Memory Limits**: Added memory limits for response caching
+- **Token Count Fallback**: Added fallback estimation for token counting
+
+### Changed
+- Updated all existing advanced tools to use token budget controls
+- Updated documentation with new tools and token budget guide
+- Updated ai_multitool/advanced/__init__.py with new category imports
+- Improved memory usage monitoring across the application
+
 ## [0.2.0] - 2025-05-05
 
 ### Added
@@ -23,6 +75,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library API design documentation (LIBRARY_API_DESIGN.md)
 - Example scripts for different use cases (examples/ directory)
 - Examples: basic usage, Claude Code integration, Devin integration, custom adapter, RAG usage, code analysis
+- **Advanced Features**: 32 advanced tools across 9 categories for sophisticated AI-powered development workflows
+  - Advanced Code Analysis (5 tools): CodeRefactoring, BugDetection, CodeSmellDetection, ComplexityAnalysis, SecurityScan
+  - Advanced Git Operations (4 tools): CommitGenerator, PRAssistant, ConflictResolver, BlameAnalyzer
+  - Advanced Security (3 tools): SecretScanner, VulnChecker, LicenseCheck
+  - Advanced RAG (4 tools): MultiModalRAG, HybridSearchRAG, ReRankingRAG, CitationRAG
+  - Advanced AI (4 tools): FunctionCalling, AgentOrchestrator, WorkflowEngine, ContextWindowManager
+  - Advanced Testing (3 tools): TestGenerator, CoverageAnalyzer, MutationTester
+  - Advanced Documentation (3 tools): AutoDocGenerator, APIDocGenerator, ReadmeGenerator
+  - Advanced Project Analysis (3 tools): ArchitectureAnalyzer, DependencyAnalyzer, ProjectHealthChecker
+  - Advanced Collaboration (3 tools): CodeReviewAssistant, IssueTriageAssistant, PlanningAssistant
+  - Advanced File Operations (2 tools): BatchProcessor, SmartDiffAnalyzer
+- Advanced tools integration into adapter system with opt-in configuration
+- Advanced features example script (examples/advanced_features.py)
+- Advanced features documentation in README with usage examples for all 32 tools
+- Advanced implementation status tracking (ADVANCED_IMPLEMENTATION_STATUS.md)
 
 ### Changed
 - **Breaking Change**: Project is now a library, not a standalone CLI tool
