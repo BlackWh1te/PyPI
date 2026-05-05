@@ -11,6 +11,7 @@ from ai_multitool.core.models import Message, MessageRole, ChatHistory
 from ai_multitool.config.settings import get_settings
 from ai_multitool.utils.file_utils import read_file, read_directory, is_code_file
 from ai_multitool.parsers.code_parser import get_parser
+from ai_multitool.utils.git_utils import get_git_helper
 
 app = typer.Typer(
     name="ai-multitool",
@@ -100,6 +101,7 @@ def analyze(
     model: str = typer.Option(None, help="AI model to use (default from config)"),
     provider: str = typer.Option(None, help="AI provider (anthropic or openai)"),
     structure: bool = typer.Option(False, help="Show code structure without AI analysis"),
+    git: bool = typer.Option(True, help="Include git repository context"),
 ):
     """Analyze code with AI"""
     from pathlib import Path
@@ -113,8 +115,9 @@ def analyze(
         console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env[/red]")
         raise typer.Exit(1)
 
-    # Get code parser
+    # Get code parser and git helper
     parser = get_parser()
+    git_helper = get_git_helper()
 
     async def run_analyze():
         console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
@@ -125,6 +128,14 @@ def analyze(
         if not path_obj.exists():
             console.print(f"[red]Error: Path not found: {path}[/red]")
             raise typer.Exit(1)
+
+        # Get git context
+        git_context_str = ""
+        if git:
+            git_context = git_helper.get_context(str(path_obj.absolute()) if path_obj.is_file() else str(path_obj.absolute()))
+            git_context_str = git_helper.context_to_string(git_context)
+            if git_context.is_repo:
+                console.print(f"[dim]Git: {git_context.branch} | {git_context.status}[/dim]\n")
 
         # Parse code structure
         if path_obj.is_file():
@@ -142,6 +153,8 @@ def analyze(
             if structure:
                 # Show structure only
                 console.print(Panel(parser.structure_to_context(structure_obj), title="Code Structure"))
+                if git and git_context.is_repo:
+                    console.print(Panel(git_context_str, title="Git Context"))
                 return
             
             # Read actual content for AI analysis
@@ -165,6 +178,8 @@ def analyze(
                     console.print(Panel(parser.structure_to_context(s), title=f"{s.file_path}"))
                 if len(structures) > 10:
                     console.print(f"[dim]... and {len(structures) - 10} more files[/dim]")
+                if git and git_context.is_repo:
+                    console.print(Panel(git_context_str, title="Git Context"))
                 return
             
             # Read actual content for AI analysis
@@ -185,23 +200,24 @@ def analyze(
         # Create client
         client = ClientFactory.create_client(provider, api_key, model)
 
-        # Build prompt with structure context
-        prompt = f"""Analyze the following code:
-
-{file_info}
-
-Code Structure:
-{structure_context}
-
-```python
-{content[:10000]}
-```
-
-Please provide:
-1. A summary of what this code does
-2. Any potential issues or improvements
-3. Best practices that could be applied
-"""
+        # Build prompt with structure and git context
+        prompt_parts = [
+            f"Analyze the following code:\n\n{file_info}",
+        ]
+        
+        if git_context_str:
+            prompt_parts.append(f"\n{git_context_str}")
+        
+        prompt_parts.extend([
+            f"\nCode Structure:\n{structure_context}",
+            f"\n```python\n{content[:10000]}\n```",
+            "\nPlease provide:",
+            "1. A summary of what this code does",
+            "2. Any potential issues or improvements",
+            "3. Best practices that could be applied",
+        ])
+        
+        prompt = "\n".join(prompt_parts)
 
         # Make API call
         with Progress(

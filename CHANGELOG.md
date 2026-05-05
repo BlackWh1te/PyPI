@@ -19,11 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complexity scoring for code files
 - LICENSE file (MIT) for open source distribution
 - MANIFEST.in for proper PyPI package distribution
+- Git integration for repository context
+- Git context includes branch, commit info, status, modified files, and recent commits
+- --git flag to control git context inclusion in analyze command
+- git_utils.py module for git operations (branch, commits, status, diff, file history)
 
 ### Changed
 - Updated README with current working features
 - Added usage examples for analyze command
 - Enhanced analyze command to include code structure context in AI prompts
+- Enhanced analyze command to include git repository context in AI prompts
 
 ## [0.1.0] - 2025-05-05
 
