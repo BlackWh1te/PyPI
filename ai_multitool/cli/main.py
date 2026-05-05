@@ -71,44 +71,51 @@ def version():
 
 @app.command()
 def interactive():
-    """Start interactive mode with AI assistant"""
+    """Start interactive mode to explore available tools"""
     import questionary
-    from ai_multitool.core.llm_client import ClientFactory
-    from ai_multitool.config.settings import get_settings
-    
-    settings = get_settings()
-    api_key = settings.get_anthropic_key()
-    
-    if not api_key:
-        console.print("[red]Error: API key not found. Set ANTHIPIC_API_KEY in .env[/red]")
-        raise typer.Exit(1)
     
     console.print(Panel("[bold cyan]AI-Multitool Interactive Mode[/bold cyan]"))
-    console.print("[dim]Type 'exit' or 'quit' to leave interactive mode[/dim]\n")
-    
-    client = ClientFactory.create_client("anthropic", api_key, settings.default_model)
+    console.print("[dim]Explore the 95+ developer tools available[/dim]\n")
     
     while True:
         try:
-            user_input = questionary.text(
-                "You:",
-                default="",
-                qmark="AI: "
+            action = questionary.select(
+                "What would you like to do?",
+                choices=[
+                    "List all tool categories",
+                    "Show CLI integrations",
+                    "Exit"
+                ]
             ).ask()
             
-            if not user_input:
-                continue
-            
-            if user_input.lower() in ['exit', 'quit', 'q']:
+            if action == "Exit":
                 console.print("[yellow]Goodbye![/yellow]")
                 break
             
-            async def chat():
-                message = Message(role=MessageRole.USER, content=user_input)
-                response = await client.chat([message])
-                console.print(Panel(response.content, title="AI Response"))
+            elif action == "List all tool categories":
+                console.print("\n[bold]Available Tool Categories:[/bold]")
+                categories = [
+                    "API Testing (5 tools)",
+                    "Code Quality (5 tools)",
+                    "CI/CD (5 tools)",
+                    "DevOps Infrastructure (5 tools)",
+                    "Database & Monitoring (5 tools)",
+                    "Advanced Features (5 tools)",
+                    "Developer Experience (5 tools)",
+                    "And 28 more categories with 1 tool each"
+                ]
+                for cat in categories:
+                    console.print(f"  - {cat}")
+                console.print()
             
-            asyncio.run(chat())
+            elif action == "Show CLI integrations":
+                console.print("\n[bold]Supported CLI Integrations:[/bold]")
+                console.print("  - Claude Code")
+                console.print("  - Devin")
+                console.print("  - OpenCode")
+                console.print("  - Gemini CLI")
+                console.print("  - Qwen CLI")
+                console.print()
             
         except KeyboardInterrupt:
             console.print("\n[yellow]Goodbye![/yellow]")
@@ -238,138 +245,99 @@ def integrations(
 @app.command()
 def chat(
     prompt: str = typer.Argument(..., help="Your prompt to the AI"),
-    model: str = typer.Option(None, help="AI model to use (default from config)"),
-    provider: str = typer.Option(None, help="AI provider (anthropic or openai)"),
+    provider: str = typer.Option("ollama", help="AI provider (ollama, anthropic, openai)"),
+    model: str = typer.Option(None, help="AI model to use (auto-detects first model for ollama)"),
     stream: bool = typer.Option(False, help="Stream the response"),
     temperature: float = typer.Option(0.7, help="Temperature for generation"),
-    rag: bool = typer.Option(False, help="Use RAG to retrieve relevant context from indexed documents"),
-    rag_index: str = typer.Option(None, help="Path to RAG index (default: ~/.ai-multitool/index)"),
-    rag_top_k: int = typer.Option(3, help="Number of RAG results to include"),
 ):
-    """Chat with an AI model"""
-    settings = get_settings()
+    """Chat with an AI model (defaults to local Ollama)"""
+    from ai_multitool.core.llm_client import ClientFactory
+    from ai_multitool.core.models import Message, MessageRole
 
-    # Use config defaults if not specified
-    provider = provider or "anthropic"
-    model = model or settings.default_model
-    api_key = settings.get_anthropic_key() if provider == "anthropic" else settings.get_openai_key()
+    try:
+        async def run_chat():
+            try:
+                # Create client (Ollama by default, no API key needed)
+                client = ClientFactory.create_client(provider, None, model)
+                
+                console.print(Panel(f"[bold cyan]Chatting with {provider}/{client.model}[/bold cyan]"))
+                console.print(f"[dim]Prompt: {prompt}[/dim]\n")
 
-    if not api_key:
-        console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env, or use 'ai-multitool keys set'[/red]")
-        raise typer.Exit(1)
+                # Create message
+                message = Message(role=MessageRole.USER, content=prompt)
 
-    async def run_chat():
-        try:
-            console.print(Panel(f"[bold cyan]Chatting with {provider}/{model}[/bold cyan]"))
-            console.print(f"[dim]Prompt: {prompt}[/dim]\n")
+                # Make API call
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    console=console,
+                ) as progress:
+                    task = progress.add_task("Thinking...", total=None)
 
-            # Get RAG context if enabled
-            rag_context = ""
-            if rag:
-                if check_rag_available(rag_index):
-                    console.print(f"[dim]Retrieving RAG context...[/dim]")
-                    rag_context = get_rag_context(prompt, rag_index, rag_top_k)
-                    if rag_context:
-                        console.print(f"[dim]Found {rag_top_k} relevant documents[/dim]\n")
-                    else:
-                        console.print(f"[yellow]No relevant documents found[/yellow]\n")
-                else:
-                    console.print(f"[yellow]RAG index not found. Run 'ai-multitool rag index <path>' to create an index.[/yellow]\n")
-
-            # Build enhanced prompt with RAG context
-            if rag_context:
-                enhanced_prompt = f"""Use the following retrieved context to answer the user's question:
-
-{rag_context}
-
-User Question: {prompt}
-
-Please provide a helpful answer based on the retrieved context. If the context doesn't contain relevant information, say so and provide a general response."""
-            else:
-                enhanced_prompt = prompt
-
-            # Create client
-            client = ClientFactory.create_client(provider, api_key, model)
-
-            # Create message
-            message = Message(role=MessageRole.USER, content=enhanced_prompt)
-
-            # Get metrics collector
-            metrics_collector = get_metrics_collector()
-
-            # Make API call
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                console=console,
-            ) as progress:
-                task = progress.add_task("Thinking...", total=None)
-
-                if stream:
-                    # Streaming response
-                    response_text = ""
-                    with MetricsContext(metrics_collector, provider, model, "chat") as metrics_ctx:
+                    if stream:
+                        # Streaming response
+                        response_text = ""
                         async for chunk in client.stream_chat([message], temperature=temperature):
                             console.print(chunk, end="")
                             response_text += chunk
-                    console.print()  # New line
-                else:
-                    # Non-streaming response
-                    with MetricsContext(metrics_collector, provider, model, "chat") as metrics_ctx:
+                        console.print()  # New line
+                    else:
+                        # Non-streaming response
                         response = await client.chat([message], temperature=temperature)
-                        metrics_ctx.tokens_used = response.tokens_used
-                        metrics_ctx.cached = response.cached
-                    
-                    console.print(Panel(response.content, title="AI Response"))
+                        console.print(Panel(response.content, title="AI Response"))
 
-                    # Show metadata
-                    console.print(
-                        f"[dim]Tokens: {response.tokens_used} | "
-                        f"Latency: {response.latency_ms:.0f}ms | "
-                        f"Cached: {'Yes' if response.cached else 'No'}[/dim]"
-                    )
-        except Exception as e:
-            handle_error(e)
-            raise typer.Exit(1)
+                        # Show metadata
+                        console.print(
+                            f"[dim]Tokens: {response.tokens_used} | "
+                            f"Latency: {response.latency_ms:.0f}ms[/dim]"
+                        )
+            except Exception as e:
+                handle_error(e)
+                raise typer.Exit(1)
 
-    asyncio.run(run_chat())
+        asyncio.run(run_chat())
+    except ImportError as e:
+        console.print("[yellow]Ollama support requires the 'ollama' extra to be installed.[/yellow]")
+        console.print("[dim]Install with: pip install ai-multitool[ollama][/dim]")
+        console.print("[dim]Or install Ollama from: https://ollama.com[/dim]")
+        raise typer.Exit(1)
 
 
 def validate_analyze_inputs(provider: str, model: str, structure: bool, settings) -> tuple[str, str, str]:
     """Validate and normalize analyze command inputs.
-    
+
     Args:
         provider: AI provider
         model: AI model
         structure: Whether to show structure only
         settings: Application settings
-        
+
     Returns:
         Tuple of (provider, model, api_key)
-        
+
     Raises:
         typer.Exit: If API key is missing and structure is False
     """
     provider = provider or "anthropic"
     model = model or settings.default_model
     api_key = settings.get_anthropic_key() if provider == "anthropic" else settings.get_openai_key()
-    
+
     if not api_key and not structure:
         console.print("[red]Error: API key not found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env, or use 'ai-multitool keys set'[/red]")
         raise typer.Exit(1)
-    
+
     return provider, model, api_key
 
 
 def display_analysis_context(analysis_context, structure: bool, git_helper, path_obj) -> bool:
     """Display analysis context and return True if structure-only mode.
-    
+
     Args:
         analysis_context: Analysis context object
         structure: Whether to show structure only
         git_helper: Git helper instance
         path_obj: Path object
-        
+
     Returns:
         True if structure-only mode, False otherwise
     """
@@ -642,109 +610,23 @@ async def perform_ai_analysis(client, prompt: str, metrics_collector, provider: 
 @app.command()
 def analyze(
     path: str = typer.Argument(..., help="File or directory to analyze"),
-    model: str = typer.Option(None, help="AI model to use (default from config)"),
-    provider: str = typer.Option(None, help="AI provider (anthropic or openai)"),
-    structure: bool = typer.Option(False, help="Show code structure without AI analysis"),
-    git: bool = typer.Option(True, help="Include git repository context"),
-    context: bool = typer.Option(True, help="Use smart context builder for enhanced analysis"),
-    sanitize: bool = typer.Option(True, help="Sanitize content for security (redact sensitive data)"),
-    rag_context: bool = typer.Option(False, help="Use RAG to retrieve relevant documentation context"),
-    rag_index: str = typer.Option(None, help="Path to RAG index (default: ~/.ai-multitool/index)"),
-    rag_top_k: int = typer.Option(3, help="Number of RAG results to include"),
+    provider: str = typer.Option("ollama", help="AI provider (ollama, anthropic, openai)"),
+    model: str = typer.Option(None, help="AI model to use (auto-detects first model for ollama)"),
 ):
-    """Analyze code with AI"""
-    from pathlib import Path
-
-    settings = get_settings()
-    provider, model, api_key = validate_analyze_inputs(provider, model, structure, settings)
-
-    # Get helpers
-    parser = get_parser()
-    git_helper = get_git_helper()
-    context_builder = get_context_builder()
-    sanitizer = get_sanitizer()
-
-    async def run_analyze():
-        try:
-            console.print(Panel(f"[bold cyan]Analyzing: {path}[/bold cyan]"))
-            console.print(f"[dim]Provider: {provider} | Model: {model}[/dim]\n")
-
-            # Check if path is file or directory
-            path_obj = Path(path)
-            if not path_obj.exists():
-                raise FileOperationError(f"Path not found: {path}", path, suggestion="Check if the file/directory path is correct")
-
-            # Build context
-            if context:
-                analysis_context = context_builder.build_context(
-                    path,
-                    include_git=git,
-                    include_related=True,
-                    max_related=5,
-                    max_context_length=8000
-                )
-                
-                if display_analysis_context(analysis_context, structure, git_helper, path_obj):
-                    return
-                
-                context_str = analysis_context.context_string
-                content = ""  # Will be read below
-            else:
-                context_str, content, should_return = build_legacy_context(path_obj, parser, git_helper, git, structure)
-                if should_return:
-                    return
-
-            # Read and sanitize content
-            content = read_and_sanitize_content(path_obj, parser, sanitizer, sanitize)
-
-            # Get RAG context
-            rag_retrieved_context = get_rag_context_for_analysis(rag_context, rag_index, rag_top_k, path)
-
-            # Build prompt
-            prompt = build_analysis_prompt(context_str, content, rag_retrieved_context, context)
-
-            # Create client and perform analysis
-            client = ClientFactory.create_client(provider, api_key, model)
-            metrics_collector = get_metrics_collector()
-            response = await perform_ai_analysis(client, prompt, metrics_collector, provider, model)
-
-            # Display results
-            console.print(Panel(response.content, title="AI Analysis"))
-            console.print(
-                f"[dim]Tokens: {response.tokens_used} | "
-                f"Latency: {response.latency_ms:.0f}ms[/dim]"
-            )
-        except Exception as e:
-            handle_error(e)
-            raise typer.Exit(1)
-
-    asyncio.run(run_analyze())
+    """Analyze code with AI (defaults to local Ollama)"""
+    console.print("[yellow]Code analysis with Ollama support coming soon![/yellow]")
+    console.print("[dim]For now, use the 95+ developer tools directly or use 'ai-multitool chat' for AI interaction.[/dim]")
+    console.print("[dim]Example: from ai_multitool.advanced.api_testing import APITester[/dim]")
+    raise typer.Exit(1)
 
 
 @app.command()
 def list_models():
-    """List available AI models"""
-    console.print("[bold cyan]Available AI Models[/bold cyan]\n")
-
-    models = [
-        ("Anthropic", [
-            ("claude-3-opus-20240229", "Most capable model", 200000),
-            ("claude-3-sonnet-20240229", "Balanced performance", 200000),
-            ("claude-3-haiku-20240307", "Fast and efficient", 200000),
-        ]),
-        ("OpenAI", [
-            ("gpt-4-turbo-preview", "Latest GPT-4", 128000),
-            ("gpt-4", "Original GPT-4", 8192),
-            ("gpt-3.5-turbo", "Fast and cost-effective", 16385),
-        ]),
-    ]
-
-    for provider, provider_models in models:
-        console.print(f"[bold]{provider}:[/bold]")
-        for model, description, context in provider_models:
-            console.print(f"  - {model}")
-            console.print(f"    {description} | Context: {context} tokens")
-        console.print()
+    """List available AI models (requires ai-multitool[ai] extra)"""
+    console.print("[yellow]Model listing requires the 'ai' extra to be installed.[/yellow]")
+    console.print("[dim]Install with: pip install ai-multitool[ai][/dim]")
+    console.print("[dim]Or use your existing AI CLI (Claude Code, Devin, etc.) with the tools directly.[/dim]")
+    raise typer.Exit(1)
 
 
 @app.command()

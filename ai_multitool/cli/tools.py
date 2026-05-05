@@ -264,3 +264,6 @@ def create_cli_app():
 if __name__ == "__main__":
     app = create_cli_app()
     app()
+
+# Export app for CLI entry point
+app = create_cli_app()

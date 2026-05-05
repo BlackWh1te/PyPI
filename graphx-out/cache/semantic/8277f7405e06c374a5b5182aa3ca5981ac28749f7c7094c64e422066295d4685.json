@@ -1,0 +1,1 @@
+{"nodes": [{"id": "workflow", "label": "Development Workflow", "file_type": "document", "source_file": "WORKFLOW.md", "source_location": null}], "edges": [{"source": "workflow", "target": "setup_complete", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "WORKFLOW.md", "source_location": null}], "hyperedges": []}

@@ -1,35 +1,27 @@
 """
-ai-multitool: AI-powered multitool library for CLI integration
+ai-multitool: Developer tools library for CLI integration
 
-This library provides AI-powered capabilities that can be integrated into
-various CLI tools (Claude Code, Devin, OpenCode, Gemini CLI, Qwen CLI, etc.).
+This library provides 95+ developer tools that can be integrated into
+various AI CLI tools (Claude Code, Devin, OpenCode, Gemini CLI, Qwen CLI, etc.).
+
+The tools work standalone and can be called from your AI CLI via adapters.
 
 Example usage:
-    from ai_multitool import AnthropicClient, Message, MessageRole
+    from ai_multitool.advanced.api_testing import APITester
+    from ai_multitool.adapters import create_claude_code_adapter
 
-    client = AnthropicClient(api_key="your-key", model="claude-3-sonnet-20240229")
-    response = await client.chat([Message(role=MessageRole.USER, content="Hello!")])
+    # Use tools directly
+    tester = APITester()
+    result = tester.test_api("https://api.example.com")
+
+    # Or use with AI CLI via adapter
+    adapter = create_claude_code_adapter()
+    tools = adapter.get_tools()
 """
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 
-# Core LLM functionality
-from .core.llm_client import (
-    BaseLLMClient,
-    AnthropicClient,
-    OpenAIClient,
-    RateLimiter,
-    ResponseCache,
-)
-
-from .core.models import (
-    Message,
-    MessageRole,
-    LLMResponse,
-    ModelInfo,
-    ChatHistory,
-)
-
+# Core exceptions (needed by tools)
 from .core.exceptions import (
     AIMultitoolError,
     APIError,
@@ -50,30 +42,7 @@ from .core.exceptions import (
     ContextError,
 )
 
-# RAG functionality
-from .rag.indexer import DocumentIndexer, Document
-from .rag.embeddings import EmbeddingModel, OpenAIEmbeddings, FakeEmbeddings
-from .rag.chunkers import (
-    DocumentChunker,
-    RecursiveCharacterChunker,
-    FixedSizeChunker,
-    SentenceChunker,
-)
-from .rag.vector_store import VectorStore, InMemoryVectorStore
-from .rag.retriever import SimilarityRetriever
-
-# Code parsing
-from .parsers.code_parser import CodeParser, CodeStructure
-
-# Utilities
-from .utils.key_manager import KeyManager
-from .utils.sanitizer import ContentSanitizer, SanitizationResult
-from .utils.git_utils import GitHelper
-from .utils.context_builder import SmartContextBuilder, AnalysisContext
-from .utils.metrics import MetricsCollector, MetricsContext
-from .utils.file_utils import read_file, read_directory
-
-# Plugin interface
+# Plugin interface (for tool definitions)
 from .plugins import (
     BasePlugin,
     PluginConfig,
@@ -85,7 +54,7 @@ from .plugins import (
     ToolExecutionError,
 )
 
-# Adapters
+# Adapters (for CLI integration)
 from .adapters import (
     BaseAdapter,
     ToolConverter,
@@ -101,7 +70,7 @@ from .adapters import (
     create_qwen_adapter,
 )
 
-# Advanced tools (base only - advanced tool imports disabled due to naming inconsistencies)
+# Advanced tools (base classes)
 from .advanced.base import (
     AdvancedTool,
     ToolResult,
@@ -113,20 +82,6 @@ from .advanced.base import (
 __all__ = [
     # Version
     "__version__",
-
-    # Core LLM
-    "BaseLLMClient",
-    "AnthropicClient",
-    "OpenAIClient",
-    "RateLimiter",
-    "ResponseCache",
-
-    # Models
-    "Message",
-    "MessageRole",
-    "LLMResponse",
-    "ModelInfo",
-    "ChatHistory",
 
     # Exceptions
     "AIMultitoolError",
@@ -146,36 +101,6 @@ __all__ = [
     "SanitizationError",
     "GitError",
     "ContextError",
-
-    # RAG
-    "DocumentIndexer",
-    "Document",
-    "EmbeddingModel",
-    "OpenAIEmbeddings",
-    "FakeEmbeddings",
-    "DocumentChunker",
-    "RecursiveCharacterChunker",
-    "FixedSizeChunker",
-    "SentenceChunker",
-    "VectorStore",
-    "InMemoryVectorStore",
-    "SimilarityRetriever",
-
-    # Code parsing
-    "CodeParser",
-    "CodeStructure",
-
-    # Utilities
-    "KeyManager",
-    "ContentSanitizer",
-    "SanitizationResult",
-    "GitHelper",
-    "SmartContextBuilder",
-    "AnalysisContext",
-    "MetricsCollector",
-    "MetricsContext",
-    "read_file",
-    "read_directory",
 
     # Plugin interface
     "BasePlugin",
@@ -201,7 +126,7 @@ __all__ = [
     "QwenAdapter",
     "create_qwen_adapter",
 
-    # Advanced tools (base only)
+    # Advanced tools (base classes)
     "AdvancedTool",
     "ToolResult",
     "ToolPipeline",

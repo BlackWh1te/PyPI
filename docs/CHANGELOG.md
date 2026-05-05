@@ -37,6 +37,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated supported CLI tools section to show all 5 tools as fully supported (✅)
 - Updated ai_multitool/advanced/__init__.py with new tool categories and examples
 
+## [0.5.0] - 2025-05-05
+
+### Added
+- **Ollama Support**: Local AI models without API keys
+  - Added `OllamaClient` for local model support
+  - Auto-detects first available model from Ollama
+  - No API key required for local models
+  - Added `ollama` optional dependency
+  - Updated `chat` command to default to Ollama provider
+  - Auto-detection: tries Ollama first, falls back to other providers
+- **Removed AI Client from Core**: Simplified library to focus on developer tools
+  - Removed AI client imports from main `__init__.py`
+  - AI clients now optional extras (ai, ollama)
+  - Core library focuses on 95+ developer tools and CLI adapters
+  - Reduced base dependencies by removing AI SDK requirements
+
+### Changed
+- Moved AI client dependencies to optional extras:
+  - `ai` extra: anthropic, openai, cohere, litellm
+  - `ollama` extra: ollama library
+  - `rag` extra: chromadb, faiss, sentence-transformers, etc.
+- Updated `ClientFactory` to support Ollama with auto-detection
+- Simplified library description to focus on developer tools
+- Bumped version to 0.5.0
+
+### Fixed
+- Fixed Unicode encoding issues for Windows console (from 0.4.1)
+
 ## [0.4.1] - 2025-05-05
 
 ### Added

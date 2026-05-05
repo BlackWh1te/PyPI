@@ -1,0 +1,554 @@
+{
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\generate_advanced.py": {
+    "mtime": 1777985758.6436267,
+    "hash": "24fd88278eb88278a37e9348720ed593"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\release.py": {
+    "mtime": 1777983652.3278089,
+    "hash": "5877db5f395c5f17a965dacc585cdebe"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\constants.py": {
+    "mtime": 1777987262.1210403,
+    "hash": "7b8095d0afa5166f9db6c20357ad14eb"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\__init__.py": {
+    "mtime": 1777986454.7718325,
+    "hash": "38083e057e10622e19e23da7d9449921"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\adapters\\base.py": {
+    "mtime": 1777986039.946762,
+    "hash": "695beadbebbf28c9fc8ee0c71f4e3fea"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\adapters\\claude_code.py": {
+    "mtime": 1777992945.1402519,
+    "hash": "1b16d9398646510b5610746919208572"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\adapters\\devin.py": {
+    "mtime": 1777992938.994921,
+    "hash": "8b5ff9273d53bc190804190f9854a755"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\adapters\\utils.py": {
+    "mtime": 1777985314.8821218,
+    "hash": "252319a10db6451ca4b1bbac99209d95"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\adapters\\__init__.py": {
+    "mtime": 1777985333.8451636,
+    "hash": "43279ff5a765ffe16ddefe5820da82c0"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\base.py": {
+    "mtime": 1777987206.5497532,
+    "hash": "b4bd8d6d0f205b246b16d31808b1f00a"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\__init__.py": {
+    "mtime": 1777993305.583313,
+    "hash": "809efdf33740a58469d7f2acb9edf2e8"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\ai\\agents.py": {
+    "mtime": 1777992949.799233,
+    "hash": "c56d42d9b7afff57a3346dfab60f7e67"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\ai\\context_manager.py": {
+    "mtime": 1777992953.0998287,
+    "hash": "5cac74a50319e92652b1f77f37135ea2"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\ai\\function_calling.py": {
+    "mtime": 1777992956.4271798,
+    "hash": "ea71bd81a455d8b6c5a7852e23d50121"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\ai\\workflows.py": {
+    "mtime": 1777993315.7942462,
+    "hash": "69030db8fc2cc7dad64132e8fe543938"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\ai\\__init__.py": {
+    "mtime": 1777985945.012362,
+    "hash": "550dc134c8f02884daf64ab345dfe861"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\code\\bug_detection.py": {
+    "mtime": 1777993318.809539,
+    "hash": "bd7a4bb2ff8e1104ef6f7ea25521ad55"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\code\\code_smells.py": {
+    "mtime": 1777993322.87942,
+    "hash": "1dcc28139a39c25ecab9601606b5af51"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\code\\complexity.py": {
+    "mtime": 1777993326.8735068,
+    "hash": "b15b4e162938d91d90d80666b0f6ec30"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\code\\refactoring.py": {
+    "mtime": 1777993331.5956583,
+    "hash": "b20cc4dba06796173969eae7f1daa66c"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\code\\security_scan.py": {
+    "mtime": 1777993326.8746033,
+    "hash": "296a37fcf3f83482bd4e3532255b522e"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\code\\__init__.py": {
+    "mtime": 1777985740.7444575,
+    "hash": "602895feade7774eac4d7d2ccec82537"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\collaboration\\code_review.py": {
+    "mtime": 1777993326.8834486,
+    "hash": "359fc73ec25e0b92c68fd9fa09f3c955"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\collaboration\\issue_triage.py": {
+    "mtime": 1777993326.8844554,
+    "hash": "767f663460ede11aa54d8a7619a49fca"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\collaboration\\planning.py": {
+    "mtime": 1777993326.8844554,
+    "hash": "1045a1b7ce92d65656c3a30390557ab6"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\collaboration\\__init__.py": {
+    "mtime": 1777986004.4246862,
+    "hash": "42b88b6b4135f91e0c79a954b4650baa"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\docs\\api_docs.py": {
+    "mtime": 1777993326.8807628,
+    "hash": "ba75db57e36e3b3d6ac68710b288e7e3"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\docs\\auto_doc.py": {
+    "mtime": 1777993326.8819387,
+    "hash": "de109264aa518612ae03c2c642d5b593"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\docs\\readme_gen.py": {
+    "mtime": 1777993326.882249,
+    "hash": "d3a77909ee911422c53e989664c07bd3"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\docs\\__init__.py": {
+    "mtime": 1777985974.799513,
+    "hash": "a246b54abaf06381ef6d86ae8ca2e66e"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\file\\batch_processor.py": {
+    "mtime": 1777993326.8844554,
+    "hash": "2dcf2a72d770de41a1aca885bb3b5d63"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\file\\smart_diff.py": {
+    "mtime": 1777993326.8857045,
+    "hash": "3825192d1c18e7b94b93cef02314cbad"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\file\\__init__.py": {
+    "mtime": 1777986018.2474413,
+    "hash": "0ccf5078c96b0bf186bcd3a93053dc44"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\git\\blame_analyzer.py": {
+    "mtime": 1777993326.876611,
+    "hash": "7d7d230dff0882abfd03fa6cfa379907"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\git\\commit_gen.py": {
+    "mtime": 1777993326.8750257,
+    "hash": "3230b83fac8c62cfa0d995f01bca48d2"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\git\\conflict_resolver.py": {
+    "mtime": 1777993326.876206,
+    "hash": "a5670ace66291c6dd29122164c798617"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\git\\pr_assistant.py": {
+    "mtime": 1777993326.875742,
+    "hash": "587f7e0b6817b8cc65a41c8640cbcbbf"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\git\\__init__.py": {
+    "mtime": 1777985787.416949,
+    "hash": "08f2bbbf927be3eaaea83f97030b0827"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\project\\architecture.py": {
+    "mtime": 1777993326.882622,
+    "hash": "712cef8208ad6291bc82653816b1e7da"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\project\\dependencies.py": {
+    "mtime": 1777993326.8830123,
+    "hash": "8245a954e4e2a94797c956f5c04ded6e"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\project\\health.py": {
+    "mtime": 1777993326.8834486,
+    "hash": "9f22caf077ee3be426fe47c7aaf6f5f9"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\project\\__init__.py": {
+    "mtime": 1777985992.7212167,
+    "hash": "f460c6d52830069ca8cb012ca33ca83a"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\rag\\citations.py": {
+    "mtime": 1777993326.87795,
+    "hash": "f7d179401731d761465ae7264b088124"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\rag\\hybrid_search.py": {
+    "mtime": 1777993326.8788874,
+    "hash": "85e1e5097b245bf51a48cf013cfb5ca5"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\rag\\multimodal.py": {
+    "mtime": 1777993326.8793702,
+    "hash": "0227c2c56dac4d53b25c63d3afcf0ba2"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\rag\\reranking.py": {
+    "mtime": 1777993326.8797615,
+    "hash": "3ec1ccf15672461867c4345bb01c26e8"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\rag\\__init__.py": {
+    "mtime": 1777985925.416967,
+    "hash": "f7fc2e037674df54e8430bf01ce3e845"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\security\\license_check.py": {
+    "mtime": 1777993326.87795,
+    "hash": "e9149a7474ff6d69738a0ad127e87440"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\security\\vuln_checker.py": {
+    "mtime": 1777993326.877613,
+    "hash": "d67a899d4fb6b90a02a51443356dc3c7"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\security\\__init__.py": {
+    "mtime": 1777985833.7610352,
+    "hash": "240606e1bd1661af4a5f05e38bf1fc89"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\testing\\coverage.py": {
+    "mtime": 1777993326.8807628,
+    "hash": "06aab043d6c465c5074feb18671fddc5"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\testing\\mutation.py": {
+    "mtime": 1777993326.8807628,
+    "hash": "8c734254f6f59d14b423b5d3440facec"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\testing\\test_gen.py": {
+    "mtime": 1777993326.8797615,
+    "hash": "65ed203cdef7eca83176cbb1656d9bfb"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\advanced\\testing\\__init__.py": {
+    "mtime": 1777985963.4820406,
+    "hash": "3b4e319a83887e594d56dbcd1a3bae9a"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\agents\\__init__.py": {
+    "mtime": 1777982897.0424585,
+    "hash": "4732bb14e8ec49ab0115d431234151fe"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\cli\\main.py": {
+    "mtime": 1777993099.5204706,
+    "hash": "4a7ea5f1e43f5844bbf6a9992f18ada0"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\cli\\__init__.py": {
+    "mtime": 1777982894.0383227,
+    "hash": "d0e7197c9d10728a3066cf69ed1dbf20"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\config\\settings.py": {
+    "mtime": 1777984091.3331227,
+    "hash": "1222ef925a82577e1706be98d07a08e0"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\config\\__init__.py": {
+    "mtime": 1777982894.8613093,
+    "hash": "32230ed232af36173c8c54caed3dc08d"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\core\\exceptions.py": {
+    "mtime": 1777984270.100935,
+    "hash": "99dea289bcf12a52f40d9bed49567b65"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\core\\llm_client.py": {
+    "mtime": 1777991816.818624,
+    "hash": "0e26c89fba20f16e852233155ce9e5ad"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\core\\models.py": {
+    "mtime": 1777983344.2114067,
+    "hash": "2b2759504477186e9ba32797aeeade2f"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\core\\__init__.py": {
+    "mtime": 1777982893.138188,
+    "hash": "557740d7b2991d34d18aaf979a56f05d"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\parsers\\code_parser.py": {
+    "mtime": 1777992757.5869563,
+    "hash": "49cbe01c612bae4ff7eef3fcec7f755b"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\parsers\\__init__.py": {
+    "mtime": 1777983923.8766294,
+    "hash": "9e0e1547b6332f3b6844e788e74a21d2"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\plugins\\base.py": {
+    "mtime": 1777991983.0828414,
+    "hash": "3846caca13946a9dee5cc3f7d2038957"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\plugins\\exceptions.py": {
+    "mtime": 1777985294.9111395,
+    "hash": "a9462fb009faa80b7e56a985b818e7f3"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\plugins\\tools.py": {
+    "mtime": 1777987038.5184417,
+    "hash": "bc2e6aaf5001102ce0a14035d56b303c"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\plugins\\__init__.py": {
+    "mtime": 1777986382.4203205,
+    "hash": "18e4bb9e94687271dbd4805993842b13"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\rag\\chunkers.py": {
+    "mtime": 1777984645.1891448,
+    "hash": "c675a9c9ded7f428ad52393d215e4c2a"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\rag\\embeddings.py": {
+    "mtime": 1777992222.6500728,
+    "hash": "2f42c63a085306aa6a2e689f620e469c"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\rag\\indexer.py": {
+    "mtime": 1777987213.3777752,
+    "hash": "dc31acdc399fe97cef49a9d1ada2a785"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\rag\\retriever.py": {
+    "mtime": 1777992156.1591263,
+    "hash": "c60c0ef09b87a929ac40a3a09fbe95a4"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\rag\\vector_store.py": {
+    "mtime": 1777987274.3760438,
+    "hash": "1b21b5ed4b06232a342ed4118bcf9b96"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\rag\\__init__.py": {
+    "mtime": 1777984632.6988425,
+    "hash": "3332fdd51ce45442902d31e9c77e6e86"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\context_builder.py": {
+    "mtime": 1777992492.6604605,
+    "hash": "5ad0fcc17dd57365c2683d9d7e2fd27c"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\env_validation.py": {
+    "mtime": 1777987281.8678641,
+    "hash": "030612290ad62e9731524537aa5f644a"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\file_utils.py": {
+    "mtime": 1777992650.9460323,
+    "hash": "3d8a034570668e90e2e6e2c3fe200783"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\git_utils.py": {
+    "mtime": 1777992578.6228821,
+    "hash": "2fe0239c4ce4c4fe55b7829547af323c"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\graceful_shutdown.py": {
+    "mtime": 1777987401.543513,
+    "hash": "3360ebfa9dc3c8df18cb0b3b853f9434"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\health_check.py": {
+    "mtime": 1777993142.8318665,
+    "hash": "f1fe830b982453448bd464c5d94d4f12"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\key_manager.py": {
+    "mtime": 1777992393.7802725,
+    "hash": "4ddf579221d316314b3bc9d1e5d5cb92"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\logging_config.py": {
+    "mtime": 1777987078.6074898,
+    "hash": "588587bd128d8f4e000cb3c8fb914cac"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\metrics.py": {
+    "mtime": 1777991900.4857233,
+    "hash": "768b4dfa1d2c004af58b936471f48e44"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\rag_helper.py": {
+    "mtime": 1777984743.0877278,
+    "hash": "94d64b272ec2e7f7b315f0d5d5cd83cc"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\sanitizer.py": {
+    "mtime": 1777992291.6658306,
+    "hash": "fdd6e7d1a7760aae92aac01f14c495a8"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\validation.py": {
+    "mtime": 1777991645.9108415,
+    "hash": "bb1cc55af0ad8a942106a00b8d88c21e"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ai_multitool\\utils\\__init__.py": {
+    "mtime": 1777991695.665452,
+    "hash": "245988b8620ef9a732b5efea964188d7"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\examples\\advanced_features.py": {
+    "mtime": 1777986052.1931412,
+    "hash": "2aa2442c70f13b292e9c4b611c779415"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\examples\\basic_usage.py": {
+    "mtime": 1777985371.7817962,
+    "hash": "446fff7fb6206cd1cb4dab6bebcdbb9d"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\examples\\claude_code_integration.py": {
+    "mtime": 1777985374.3445654,
+    "hash": "2f174a5688646c576d7fb58882164f12"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\examples\\code_analysis.py": {
+    "mtime": 1777985386.83865,
+    "hash": "148e5caf4e4d12f2baf88c0602a1b862"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\examples\\custom_adapter.py": {
+    "mtime": 1777985380.8907282,
+    "hash": "d32836e10cc558091cee20a86014123f"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\examples\\devin_integration.py": {
+    "mtime": 1777985377.9374864,
+    "hash": "afcd8dbe19484268c707e9ae773f2ff2"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\examples\\rag_usage.py": {
+    "mtime": 1777985383.9089165,
+    "hash": "55e0eea40f9960d08450e7cbb2018fd7"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\conftest.py": {
+    "mtime": 1777986252.396916,
+    "hash": "8ea6009bc5866b5c17337304a48beeb2"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\test_adapters.py": {
+    "mtime": 1777986461.9759848,
+    "hash": "a8d40f74df74212a987eacbbb7c78b43"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\test_advanced_tools.py": {
+    "mtime": 1777986423.3567128,
+    "hash": "2ed33f8680d01644f4c6f59e6258067c"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\test_code_analysis.py": {
+    "mtime": 1777986284.811958,
+    "hash": "e50a57cad45e74e26f00a32185b2cf10"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\test_core_llm.py": {
+    "mtime": 1777986264.263829,
+    "hash": "f0d03543a74045161c6f9e94f3c16b3d"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\test_plugins.py": {
+    "mtime": 1777986316.5408587,
+    "hash": "0af98d8a1748fb3b59c028e57cbf88b0"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\test_rag.py": {
+    "mtime": 1777987366.9583328,
+    "hash": "9ae3eb8afb1d0a880efb00974e8ecefc"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\test_utilities.py": {
+    "mtime": 1777987354.2635312,
+    "hash": "91f18d8ad95528a4a55380fdc18f6c3e"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\tests\\__init__.py": {
+    "mtime": 1777986246.7910533,
+    "hash": "5ae81841b509f6b07e931e0504cbbc12"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ADDITIONAL_FIXES_APPLIED.md": {
+    "mtime": 1777987049.0466013,
+    "hash": "398f453513a1dfe843515d3a84afc089"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ADVANCED_ARCHITECTURE.md": {
+    "mtime": 1777985722.4338808,
+    "hash": "fdc47347fce69b9365addd85de6ef79d"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ADVANCED_FEATURES.md": {
+    "mtime": 1777983045.8170805,
+    "hash": "7411ac649390a12fc6bb407316f9ff98"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ADVANCED_IMPLEMENTATION_STATUS.md": {
+    "mtime": 1777985874.242298,
+    "hash": "489db0d3d50ce20ec5f239ae55bf9ab9"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ALL_FIXES_SUMMARY.md": {
+    "mtime": 1777987107.1550052,
+    "hash": "fbaa8e944e243e584cfee3c14739ebd1"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\CHANGELOG.md": {
+    "mtime": 1777986110.8673632,
+    "hash": "b16ac314ef88af618c4694d91b863674"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\CODE_AUDIT_REPORT.md": {
+    "mtime": 1777986827.004474,
+    "hash": "efe9d78d28dc680122b70c66f3807b4a"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\CODE_QUALITY_AUDIT_REPORT.md": {
+    "mtime": 1777991186.4197972,
+    "hash": "09a634fd41841c3c1a74cb751b2845ee"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\CODE_QUALITY_FIXES_APPLIED.md": {
+    "mtime": 1777993355.1804678,
+    "hash": "2a2be530f7f5f060e8a3f4ccab56595b"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\COMPLETE_SUMMARY.md": {
+    "mtime": 1777983282.3198671,
+    "hash": "91e548bc806d173aa22b14b0dd5b0dce"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\COMPLETION_REPORT.md": {
+    "mtime": 1777987177.5077395,
+    "hash": "103be4d4495cccddfceffa81f0d733ab"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\COMPREHENSIVE_COMPLETION_REPORT.md": {
+    "mtime": 1777987310.7745516,
+    "hash": "5dea54ceaf23106aec9f9a026250adbb"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\CRITICAL_FIXES_APPLIED.md": {
+    "mtime": 1777986987.4482803,
+    "hash": "70c78188def3ca699b607241a7373a97"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ERROR_CONDITIONS.md": {
+    "mtime": 1777987379.5179446,
+    "hash": "ead06428e13c9c19fd0ee859f987db35"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\FINAL_AUDIT_COMPLETION_REPORT.md": {
+    "mtime": 1777987416.6060793,
+    "hash": "5f71405b22f9cfc2af16823904f9dda8"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\FINAL_COMPLETION_REPORT.md": {
+    "mtime": 1777987232.7214456,
+    "hash": "6a823509ea6f6a6e6300f272d67b4be5"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\FINAL_STATUS_REPORT.md": {
+    "mtime": 1777987138.6504936,
+    "hash": "2e64e309dc57f0dc3d2de3ad108df5fb"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\FRESH_AUDIT_REPORT.md": {
+    "mtime": 1777986899.5574982,
+    "hash": "3e6d4883f36dbcf3302a6b550586933a"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\GEMINI.md": {
+    "mtime": 1777987817.5044038,
+    "hash": "a080f83007bcaf2de4f38631a537b06d"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\IMPROVEMENTS_SUMMARY.md": {
+    "mtime": 1777983063.6355796,
+    "hash": "4b606e0d49867a31f8db130d61fb1975"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\LIBRARY_API_DESIGN.md": {
+    "mtime": 1777985273.16434,
+    "hash": "073c1c861b5334a442945c3ffca12bd5"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\MEMORY_LEAKS_REPORT.md": {
+    "mtime": 1777986748.0427823,
+    "hash": "16b887db1159ca788ebcc8763e680c0f"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\MEMORY_LEAK_FIXES_REPORT.md": {
+    "mtime": 1777987668.3413732,
+    "hash": "d159b7d0b24e5db50b3cbf9ffc10d4a3"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\PLAN.md": {
+    "mtime": 1777983246.5999517,
+    "hash": "e2b689db6d00d2b9f1074a85f72217e9"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\PLUGIN_INTEGRATION.md": {
+    "mtime": 1777985361.990103,
+    "hash": "768e2348aafc2798b4aa778585d182e6"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\README.md": {
+    "mtime": 1777986104.566945,
+    "hash": "b937d4caef2864858e8798a9b8af8343"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\requirements.txt": {
+    "mtime": 1777984688.2061577,
+    "hash": "4fa66fe978f881fe1a11e8004ed3b808"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\SETUP_COMPLETE.md": {
+    "mtime": 1777983684.3979366,
+    "hash": "595b29423b8aa94166bc4307c541733d"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ULTIMATE_FEATURES.md": {
+    "mtime": 1777983236.181005,
+    "hash": "9a69d5e0b502f80558c1178fa8c885c4"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\ULTIMATE_SUMMARY.md": {
+    "mtime": 1777983260.413946,
+    "hash": "e68362d5f7a584310f041cfb2aab4a4f"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\VECTOR_SYSTEM.md": {
+    "mtime": 1777983111.2782826,
+    "hash": "166203daeedb78853f81f8af74d465c7"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\VECTOR_SYSTEM_SUMMARY.md": {
+    "mtime": 1777983141.1479108,
+    "hash": "b99fc0e9682662429a192f7890480ec3"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\WORKFLOW.md": {
+    "mtime": 1777983672.7715433,
+    "hash": "367d99c4f221ddba7553c0a11223a7a4"
+  },
+  "C:\\Users\\Shukhrat\\Desktop\\New folder\\git\\PyPi\\examples\\README.md": {
+    "mtime": 1777985389.342102,
+    "hash": "d51e0c80eb7dc648a93b7edc1809072f"
+  }
+}

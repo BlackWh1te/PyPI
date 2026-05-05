@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-multitool"
-version = "0.4.1"
+version = "0.5.0"
 description = "AI-powered multitool library for CLI tool integration"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -28,10 +28,6 @@ classifiers = [
 dependencies = [
     "typer[all]>=0.9.0",
     "rich>=13.0.0",
-    "anthropic>=0.18.0",
-    "litellm>=1.0.0",
-    "openai>=1.0.0",
-    "cohere>=4.0.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv>=1.0.0",
@@ -48,6 +44,29 @@ dependencies = [
     "python-dateutil>=2.8.0",
     "tqdm>=4.66.0",
     "tenacity>=8.2.0",
+    "keyring>=24.0.0",
+    "questionary>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+ollama = [
+    "ollama>=0.1.0",
+]
+ai = [
+    "anthropic>=0.18.0",
+    "litellm>=1.0.0",
+    "openai>=1.0.0",
+    "cohere>=4.0.0",
+]
+rag = [
     "chromadb>=0.4.0",
     "faiss-cpu>=1.7.0",
     "sentence-transformers>=2.2.0",
@@ -57,18 +76,9 @@ dependencies = [
     "langdetect>=1.0.9",
     "langchain>=0.1.0",
     "langchain-text-splitters>=0.0.0",
-    "keyring>=24.0.0",
-    "questionary>=2.0.0",
 ]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.0.0",
+all = [
+    "ai-multitool[dev,ollama,ai,rag]",
 ]
 
 [project.scripts]

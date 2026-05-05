@@ -506,13 +506,187 @@ class OpenAIClient(BaseLLMClient):
         )
 
 
+class OllamaClient(BaseLLMClient):
+    """Ollama client for local models"""
+
+    def __init__(
+        self,
+        host: str = "http://localhost:11434",
+        model: Optional[str] = None,
+        enable_cache: bool = True,
+        **kwargs
+    ):
+        try:
+            import ollama
+        except ImportError:
+            raise ConfigurationError(
+                "Ollama library not installed",
+                suggestion="Install with: pip install ai-multitool[ollama]"
+            )
+
+        self.host = host
+        self.client = ollama.Client(host=host)
+        
+        # Auto-detect model if not specified
+        if model is None:
+            model = self._get_first_model()
+        
+        self.model = model
+        self._cache = ResponseCache() if enable_cache else None
+        logger.info(f"Ollama client initialized with model: {model}")
+
+    def _get_first_model(self) -> str:
+        """Get the first available model from Ollama"""
+        try:
+            models = self.client.list()
+            if models and 'models' in models and models['models']:
+                first_model = models['models'][0]['name']
+                logger.info(f"Auto-detected Ollama model: {first_model}")
+                return first_model
+            else:
+                raise ConfigurationError(
+                    "No models found in Ollama",
+                    suggestion="Pull a model with: ollama pull <model-name>"
+                )
+        except Exception as e:
+            raise ConfigurationError(
+                f"Failed to connect to Ollama at {self.host}",
+                suggestion="Make sure Ollama is running: ollama serve"
+            )
+
+    async def chat(
+        self,
+        messages: List[Message],
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        system_prompt: Optional[str] = None,
+        **kwargs
+    ) -> LLMResponse:
+        """Chat with Ollama model"""
+        if not messages:
+            raise ConfigurationError("Messages list cannot be empty", suggestion="Provide at least one message")
+
+        start_time = time.time()
+
+        # Convert messages to Ollama format
+        ollama_messages = [
+            {"role": m.role.value, "content": m.content}
+            for m in messages
+        ]
+
+        # Add system prompt if provided
+        if system_prompt:
+            ollama_messages.insert(0, {"role": "system", "content": system_prompt})
+
+        try:
+            # Make API call (ollama library is synchronous, run in thread pool)
+            import asyncio
+            loop = asyncio.get_event_loop()
+            
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.chat(
+                    model=self.model,
+                    messages=ollama_messages,
+                    options={
+                        'temperature': temperature,
+                        'num_predict': max_tokens,
+                    }
+                )
+            )
+
+            # Parse response
+            latency_ms = (time.time() - start_time) * 1000
+
+            result = LLMResponse(
+                content=response['message']['content'],
+                model=self.model,
+                tokens_used=response.get('eval_count', 0) + response.get('prompt_eval_count', 0),
+                finish_reason='stop',
+                latency_ms=latency_ms
+            )
+
+            logger.info(f"Ollama chat success: tokens={result.tokens_used}, latency={latency_ms:.2f}ms")
+
+            # Cache result
+            if self._cache:
+                await self._cache.set(messages, result, temperature, max_tokens)
+
+            return result
+
+        except Exception as e:
+            if "connect" in str(e).lower():
+                raise NetworkError(f"Failed to connect to Ollama at {self.host}")
+            raise APIError(f"Ollama error: {e}", details={"error_type": type(e).__name__})
+
+    async def stream_chat(
+        self,
+        messages: List[Message],
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        system_prompt: Optional[str] = None,
+        **kwargs
+    ) -> AsyncIterator[str]:
+        """Stream chat response from Ollama"""
+        if not messages:
+            raise ConfigurationError("Messages list cannot be empty", suggestion="Provide at least one message")
+
+        # Convert messages to Ollama format
+        ollama_messages = [
+            {"role": m.role.value, "content": m.content}
+            for m in messages
+        ]
+
+        # Add system prompt if provided
+        if system_prompt:
+            ollama_messages.insert(0, {"role": "system", "content": system_prompt})
+
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            
+            # Stream response
+            stream = await loop.run_in_executor(
+                None,
+                lambda: self.client.chat(
+                    model=self.model,
+                    messages=ollama_messages,
+                    stream=True,
+                    options={
+                        'temperature': temperature,
+                        'num_predict': max_tokens,
+                    }
+                )
+            )
+
+            for chunk in stream:
+                if chunk['message']['content']:
+                    yield chunk['message']['content']
+
+        except Exception as e:
+            if "connect" in str(e).lower():
+                raise NetworkError(f"Failed to connect to Ollama at {self.host}")
+            raise APIError(f"Ollama streaming error: {e}", details={"error_type": type(e).__name__})
+
+    def get_model_info(self) -> ModelInfo:
+        """Get Ollama model info"""
+        return ModelInfo(
+            name=self.model,
+            max_tokens=4096,  # Default for most Ollama models
+            supports_streaming=True,
+            supports_function_calling=False,
+            cost_per_1k_input=0.0,  # Free - local
+            cost_per_1k_output=0.0
+        )
+
+
 class ClientFactory:
     """Factory for creating LLM clients"""
 
     @staticmethod
     def create_client(
         provider: str,
-        api_key: str,
+        api_key: Optional[str] = None,
         model: Optional[str] = None,
         enable_cache: bool = True,
         **kwargs
@@ -521,13 +695,15 @@ class ClientFactory:
         providers = {
             "anthropic": AnthropicClient,
             "openai": OpenAIClient,
+            "ollama": OllamaClient,
         }
 
         if is_empty_string(provider):
-            raise ConfigurationError(
-                "Provider is required",
-                suggestion="Use 'anthropic' or 'openai'"
-            )
+            # Auto-detect: try Ollama first, then default to anthropic
+            try:
+                return OllamaClient(model=model, enable_cache=enable_cache, **kwargs)
+            except:
+                provider = "anthropic"
         
         provider = provider.lower()
         
@@ -538,6 +714,25 @@ class ClientFactory:
             )
 
         client_class = providers[provider]
+
+        # Ollama doesn't need API key
+        if provider == "ollama":
+            try:
+                return client_class(model=model, enable_cache=enable_cache, **kwargs)
+            except Exception as e:
+                if isinstance(e, (ConfigurationError, APIError)):
+                    raise
+                raise ConfigurationError(
+                    f"Failed to create Ollama client: {e}",
+                    suggestion="Make sure Ollama is running: ollama serve"
+                )
+
+        # Other providers need API key
+        if not api_key:
+            raise ConfigurationError(
+                f"API key required for {provider}",
+                suggestion=f"Set {provider.upper()}_API_KEY environment variable"
+            )
 
         # Default models
         if model is None:
